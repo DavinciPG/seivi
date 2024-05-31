@@ -1,0 +1,32 @@
+{
+  "name": "seivi_2.0",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavinciPG/seivi.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DavinciPG/seivi/issues"
+  },
+  "homepage": "https://github.com/DavinciPG/seivi#readme",
+  "description": "",
+  "devDependencies": {
+    "eslint": "^9.4.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "mysql2": "^3.10.0",
+    "sequelize": "^6.37.3"
+  }
+}
