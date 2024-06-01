@@ -1,39 +1,61 @@
-let scraperList = [
-    {
-        link: 'https://www.klick.ee/sulearvuti-dell-latitude-5480-i5-8gb-512gb-w10pro-uue-ringi',
-        last_checked: null,
-        should_check_at: null,
-        users: [],
-        scraper: 'klick'
-    },
-    {
-        link: 'https://www.klick.ee/nutikell-apple-watch-se-gps-40mm-alu?childSku=MNJT3EL%2FA',
-        last_checked: null,
-        should_check_at: null,
-        users: [],
-        scraper: 'klick'
-    }
-];
+const fs = require('fs');
+const path = require('path');
 
-function getScraperList() {
+const scraperListFilePath = path.join(__dirname, 'scraperList.json');
+let scraperList = [];
+
+async function loadScraperList() {
+    try {
+        if (fs.existsSync(scraperListFilePath)) {
+            const data = await fs.promises.readFile(scraperListFilePath, 'utf8');
+            scraperList = JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading scraper list:', error);
+    }
+}
+
+async function saveScraperList() {
+    try {
+        const data = JSON.stringify(scraperList, null, 2);
+        await fs.promises.writeFile(scraperListFilePath, data, 'utf8');
+    } catch (error) {
+        console.error('Error saving scraper list:', error);
+    }
+}
+
+async function getScraperList() {
     const now = new Date();
     return scraperList.filter(item => !item.should_check_at || item.should_check_at <= now);
 }
 
-function addScraperEntry(entry, user) {
+async function addScraperEntry(entry, user) {
     let existingEntry = scraperList.find(e => e.link === entry.link);
-    if(existingEntry) {
+    if (existingEntry) {
         existingEntry.users.push(user.ID);
-        return;
+    } else {
+        scraperList.push(entry);
     }
-    scraperList.push(entry);
+    await saveScraperList();
 }
 
-function removeScraperEntry(id) {
-    let index = scraperList.findIndex(e => e.link === id);
-    if(index !== -1) {
-        scraperList.splice(index, 1);
+async function removeScraperEntry(link, user_id) {
+    let entry = scraperList.find(e => e.link === link);
+    if (entry) {
+        const userIndex = entry.users.indexOf(user_id);
+        if (userIndex !== -1) {
+            entry.users.splice(userIndex, 1);
+        }
+        if (entry.users.length === 0) {
+            const entryIndex = scraperList.indexOf(entry);
+            if (entryIndex !== -1) {
+                scraperList.splice(entryIndex, 1);
+            }
+        }
     }
+    await saveScraperList();
 }
+
+loadScraperList();
 
 module.exports = { getScraperList, addScraperEntry, removeScraperEntry };
