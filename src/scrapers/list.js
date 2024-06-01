@@ -26,7 +26,8 @@ async function saveScraperList() {
 
 async function getScraperList() {
     const now = new Date();
-    return scraperList.filter(item => !item.should_check_at || item.should_check_at <= now);
+    const scrapersToRun =  scraperList.filter(item => !item.should_check_at || item.should_check_at <= now);
+    return scrapersToRun;
 }
 
 async function addScraperEntry(entry, user) {
@@ -56,6 +57,4 @@ async function removeScraperEntry(link, user_id) {
     await saveScraperList();
 }
 
-loadScraperList();
-
-module.exports = { getScraperList, addScraperEntry, removeScraperEntry };
+module.exports = { getScraperList, addScraperEntry, removeScraperEntry, loadScraperList };

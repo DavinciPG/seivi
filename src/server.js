@@ -4,6 +4,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // scraper
+const { loadScraperList } = require('./scrapers/list');
 const { runAllScrapers } = require('./controllers/scraperController');
 
 // Import handlers
@@ -24,8 +25,10 @@ app.use(sessionHandler);
 app.use('/', routes);
 
 // run the scraper alongside the server
-runAllScrapers();
-setInterval(runAllScrapers, 1000 * 60); // every minute (note: not smart to make 1000000s of requests per minute but for now it's fine)
+loadScraperList().then(() => {
+  runAllScrapers();
+  setInterval(runAllScrapers, 1000 * 60); // every minute (note: not smart to make 1000000s of requests per minute but for now it's fine)
+});
 
 // Start server
 app.listen(port, () => {
