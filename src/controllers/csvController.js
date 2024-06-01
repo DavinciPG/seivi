@@ -51,4 +51,4 @@ async function saveToCsv(records, fields, options = { debug: false }) {
     }
 }
 
-module.exports = { saveToCsv };
+module.exports = { saveToCsv, readCsvFile };

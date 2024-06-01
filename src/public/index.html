@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraper Data</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scraper Data</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Price</th>
+                <th>Discount</th>
+            </tr>
+        </thead>
+        <tbody id="data-table-body">
+           
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchScraperData() {
+            try {
+                const response = await fetch('/scrapers/klick/data');
+                const data = await response.json();
+                const tableBody = document.getElementById('data-table-body');
+                
+                tableBody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    const idCell = document.createElement('td');
+                    const priceCell = document.createElement('td');
+                    const discountCell = document.createElement('td');
+                    
+                    idCell.textContent = item.id;
+                    priceCell.textContent = item.price;
+                    discountCell.textContent = item.discount;
+                    
+                    row.appendChild(idCell);
+                    row.appendChild(priceCell);
+                    row.appendChild(discountCell);
+                    
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching scraper data:', error);
+            }
+        }
+
+        window.onload = fetchScraperData;
+    </script>
+</body>
+</html>

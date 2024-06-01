@@ -5,6 +5,6 @@ const authRoutes = require('./auth');
 const klickRoute = require('./scraping/klick');
 
 router.use(authRoutes);
-router.use(klickRoute);
+router.use('/scrapers/', klickRoute);
 
 module.exports = router;

@@ -19,13 +19,14 @@ async function scrape(entry, options) {
         entry.last_checked = new Date();
 
         const records = [{
+            id: entry.id,
             link: entry.link,
             last_checked: entry.last_checked.toISOString(),
             price: entry.price,
             discount: entry.discount
         }];
 
-        const fields = ['link', 'last_checked', 'price', 'discount'];
+        const fields = ['id', 'link', 'last_checked', 'price', 'discount'];
         await saveToCsv(records, fields, options);
 
         if (options.debug)
