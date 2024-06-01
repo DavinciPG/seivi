@@ -1,6 +1,9 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { saveToCsv } = require('../../controllers/csvController');
+const list = require('../list');
+
+const date = require('../../helpers/date');
 
 async function scrape(entry, options) {
     try {
@@ -16,17 +19,18 @@ async function scrape(entry, options) {
         const discount = $('div.discount-wrapper span.price-discount').text().trim();
         entry.discount = discount;
 
-        entry.last_checked = new Date();
+        entry.last_checked = await date.getCurrentFormattedDate();
 
         const records = [{
             id: entry.id,
             link: entry.link,
-            last_checked: entry.last_checked.toISOString(),
+            last_checked: entry.last_checked,
             price: entry.price,
-            discount: entry.discount
+            discount: entry.discount,
+            users: entry.users
         }];
 
-        const fields = ['id', 'link', 'last_checked', 'price', 'discount'];
+        const fields = ['id', 'link', 'last_checked', 'price', 'discount', 'users'];
         await saveToCsv(records, fields, options);
 
         if (options.debug)

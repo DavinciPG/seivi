@@ -24,20 +24,45 @@ async function saveScraperList() {
     }
 }
 
+async function updateScraperEntry(entry) {
+    try {
+        const index = scraperList.findIndex(e => e.link === entry.link);
+        if (index !== -1) {
+            scraperList[index].last_checked = entry.last_checked;
+            await saveScraperList();
+        }
+    } catch (error) {
+        console.error('Error saving scraper list:', error);
+    }
+}
+
 async function getScraperList() {
-    const now = new Date();
-    const scrapersToRun =  scraperList.filter(item => !item.should_check_at || item.should_check_at <= now);
+    const scrapersToRun = scraperList;
+    // we can do magic here if needed, right now logically just return the list because we will do data return by date but data update every x time (dont know yet what x is)
     return scrapersToRun;
 }
 
-async function addScraperEntry(entry, user) {
+async function addScraperEntry(entry, user_id) {
     let existingEntry = scraperList.find(e => e.link === entry.link);
     if (existingEntry) {
-        existingEntry.users.push(user.ID);
+        if(!existingEntry.users.includes(user_id))
+            existingEntry.users.push(user_id);
+        else
+            // user already following this link
+            return false;
     } else {
-        scraperList.push(entry);
+        const newEntry = {
+            id: scraperList.length + 1,
+            link: entry.link,
+            last_checked: null,
+            users: [user_id],
+            scraper: entry.scraper
+        };
+        
+        scraperList.push(newEntry);
     }
     await saveScraperList();
+    return true;
 }
 
 async function removeScraperEntry(link, user_id) {
@@ -57,4 +82,4 @@ async function removeScraperEntry(link, user_id) {
     await saveScraperList();
 }
 
-module.exports = { getScraperList, addScraperEntry, removeScraperEntry, loadScraperList };
+module.exports = { getScraperList, addScraperEntry, removeScraperEntry, loadScraperList, updateScraperEntry, saveScraperList };

@@ -1,6 +1,6 @@
 const { Worker } = require('worker_threads');
 const path = require('path');
-const { getScraperList } = require('../scrapers/list');
+const { getScraperList, updateScraperEntry } = require('../scrapers/list');
 
 function runAllScrapers() {
     getScraperList().then(scrapersToRun => {
@@ -13,9 +13,10 @@ function runAllScrapers() {
                 }
             });
 
-            worker.on('message', (message) => {
+            worker.on('message', async (message) => {
                 if (message.success) {
                     // you can debug the result here if needed
+                    await updateScraperEntry(message.data.entry);
                 } else {
                     console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
                 }
