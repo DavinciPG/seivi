@@ -3,6 +3,9 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// scraper
+const { runAllScrapers } = require('./controllers/scraperController');
+
 // Import handlers
 const corsHandler = require('./handlers/cors');
 const rateLimiter = require('./handlers/rateLimiter');
@@ -19,6 +22,10 @@ app.use(sessionHandler);
 
 // Routes
 app.use('/', routes);
+
+// run the scraper alongside the server
+runAllScrapers();
+setInterval(runAllScrapers, 1000 * 60); // every minute (note: not smart to make 1000000s of requests per minute but for now it's fine)
 
 // Start server
 app.listen(port, () => {
