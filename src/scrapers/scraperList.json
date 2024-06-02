@@ -1,29 +1,20 @@
 [
   {
-    "id": 1,
+    "ID": 1,
     "link": "https://www.klick.ee/sulearvuti-dell-latitude-5480-i5-8gb-512gb-w10pro-uue-ringi",
-    "last_checked": "02-06-2024 00:26",
-    "users": [
-      1
-    ],
+    "scraper_id": 1,
     "scraper": "klick"
   },
   {
-    "id": 2,
+    "ID": 2,
     "link": "https://www.klick.ee/nutikell-apple-watch-se-gps-40mm-alu?childSku=MNJT3EL%2FA",
-    "last_checked": "02-06-2024 00:26",
-    "users": [
-      1
-    ],
+    "scraper_id": 1,
     "scraper": "klick"
   },
   {
-    "id": 3,
+    "ID": 3,
     "link": "https://www.klick.ee/robottolmuimeja-xiaomi-robot-vacuum-mop-essential",
-    "last_checked": "02-06-2024 00:26",
-    "users": [
-      1
-    ],
+    "scraper_id": 1,
     "scraper": "klick"
   }
 ]

@@ -1,25 +1,18 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../database');
 
-const User = sequelize.define('User', {
+const Scraper = sequelize.define('Scraper', {
     ID: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
     },
-    username: {
+    name: {
         type: DataTypes.STRING,
-        unique: true,
         allowNull: false
     },
-    email: {
-        type: DataTypes.STRING,
-        unique: true,
-        allowNull: false
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false
+    supported_parameters: {
+        type: DataTypes.JSON
     },
     createdAt: {
         type: DataTypes.DATE
@@ -28,8 +21,8 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE
     }
 }, {
-    tableName: 'Users',
+    tableName: 'Scrapers',
     timestamps: false
 });
 
-module.exports = User;
+module.exports = Scraper;

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
 
 const { checkNotAuthenticated, checkAuthenticated } = require('../../handlers/authMiddleware');
 const { readCsvFile } = require('../../controllers/csvController');
 
-const scraperList = require('../../scrapers/list');
+const itemController = require('../../controllers/itemController');
+const userScraperSettingsController = require('../../controllers/userScraperSetting');
+const scrapedDataController = require('../../controllers/scrapedData');
 
 // store global variable to make it easier to change the scraper name
 const scraperName = 'klick';
@@ -21,7 +21,7 @@ const linkRegex = /^(https:\/\/)?(www\.)?klick\.ee\/[a-zA-Z0-9\-]+$/;
 
 router.post(`/${scraperName}/new`, checkAuthenticated, async (req, res) => {
     try {
-        const { link } = req.body;
+        const { link, scraperData } = req.body;
 
         if (!link) {
             return res.status(400).json({ message: 'Link is required' });
@@ -31,12 +31,27 @@ router.post(`/${scraperName}/new`, checkAuthenticated, async (req, res) => {
             return res.status(400).json({ message: 'Invalid link format' });
         }
 
-        const addedEntry = await scraperList.addScraperEntry({ link, scraper: scraperName }, req.session.user.id);
+        if(!scraperData || scraperData.length === 0) {
+            return res.status(400).json({ message: 'Scraper data is required' });
+        }
 
-        if(addedEntry)
-            res.status(200).json({ message: 'Scraper entry added successfully' });
-        else
-            res.status(400).json({ message: 'You are already following this link' });
+        // @note: scraper_data = table of items to scraper ex: [price, discount]
+        // @todo: unsafe, scraper_data should be validated
+
+        const foundItem = await itemController.findItem(link);
+        if(foundItem) {
+            const settings = await userScraperSettingsController.getUserScraperSetting(req.session.user.id, foundItem.ID);
+            if(settings) {
+                return res.status(400).json({ message: 'You are already following this link' });
+            } else {
+                await userScraperSettingsController.createUserScraperSetting(req.session.user.id, foundItem.ID, scraperData);
+            }
+        } else {
+            const newItem = await itemController.createItem(link, scraperName);
+            await userScraperSettingsController.createUserScraperSetting(req.session.user.id, newItem.ID, scraperData);
+        }
+
+        return res.status(200).json({ message: 'Scraper entry added successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -47,18 +62,32 @@ router.post(`/${scraperName}/new`, checkAuthenticated, async (req, res) => {
 router.get(`/${scraperName}/data`, checkAuthenticated, async (req, res) => {
     try
     {
-        const filePath = path.join(__dirname, '../../scrapers/klick/scraperData.csv'); 
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ message: 'Data file not found' });
-        }
+        const scrapedData = await scrapedDataController.getScrapedDataForUser(req.session.user.id);
+        const scrapeSettings = await userScraperSettingsController.getAllScrapeSettings(req.session.user.id);
+        const filteredData = scrapedData.map(item => {
+            const data = item.dataValues.data;
+            const itemId = item.dataValues.item_id;
 
-        const data = await readCsvFile(filePath);
-        const filteredData = data.filter(item => item.users && item.users.includes(req.session.user.id));
+            const setting = scrapeSettings.find(setting => setting.dataValues.item_id === itemId);
+            if(setting) {
+                const selectedParameters = setting.dataValues.selected_parameters;
 
-        // we don't want to leak other people :)
-        const cleanedData = filteredData.map(({ users, ...rest }) => rest);
+                const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
 
-        res.json(cleanedData);
+                const filteredDataObject = Object.keys(data).reduce((result, key) => {
+                    if (!excludeKeys.includes(key)) {
+                        result[key] = data[key];
+                    }
+                    return result;
+                }, {});
+    
+                item.dataValues.data = filteredDataObject;
+            }
+
+            return item.dataValues.data;
+        });
+
+        res.json(filteredData);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

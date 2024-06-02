@@ -32,7 +32,7 @@ app.use('/', routes);
 // run the scraper alongside the server
 loadScraperList().then(() => {
   runAllScrapers();
-  setInterval(runAllScrapers, 1000 * 60); // every minute (note: not smart to make 1000000s of requests per minute but for now it's fine)
+  setInterval(runAllScrapers, 1000 * 60 * 5); // call this every 5 minutes
 });
 
 // Start server

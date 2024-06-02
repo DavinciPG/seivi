@@ -1,9 +1,9 @@
 const { Worker } = require('worker_threads');
 const path = require('path');
-const { getScraperList, updateScraperEntry } = require('../scrapers/list');
+const listController = require('../scrapers/list');
 
 function runAllScrapers() {
-    getScraperList().then(scrapersToRun => {
+    listController.getScraperList().then(scrapersToRun => {
         for (const scraperEntry of scrapersToRun) {
             const worker = new Worker(path.resolve(__dirname, '../scrapers/scraperWorker.js'), {
                 workerData: {
@@ -16,7 +16,6 @@ function runAllScrapers() {
             worker.on('message', async (message) => {
                 if (message.success) {
                     // you can debug the result here if needed
-                    await updateScraperEntry(message.data.entry);
                 } else {
                     console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
                 }
@@ -32,6 +31,10 @@ function runAllScrapers() {
                 }
             });
         }
+
+        // refresh scraper list from database... this is ran every 5 minutes :D
+        // @todo: we can convert this to local but for now we will use the database
+        listController.loadScraperList();
     }).catch(error => {
         console.error('Error getting scraper list:', error);
     });

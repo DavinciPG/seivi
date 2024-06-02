@@ -56,7 +56,7 @@ router.post('/login', checkNotAuthenticated, async (req, res) => {
         }
 
         req.session.user = {
-            id: user.id,
+            id: user.ID,
             username: user.username,
         };
 
@@ -68,7 +68,7 @@ router.post('/login', checkNotAuthenticated, async (req, res) => {
 });
 
 // Logout route
-router.post('/logout', checkAuthenticated, (req, res) => {
+router.delete('/logout', checkAuthenticated, (req, res) => {
   if (req.session) {
     req.session.destroy(err => {
       if (err) {
