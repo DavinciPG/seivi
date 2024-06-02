@@ -2,7 +2,6 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../../database');
 
 const Item = require('./item');
-const User = require('./user');
 
 const ScrapedData = sequelize.define('ScrapedData', {
     ID: {
@@ -10,14 +9,13 @@ const ScrapedData = sequelize.define('ScrapedData', {
         autoIncrement: true,
         primaryKey: true
     },
-    item_id: {
-        type: DataTypes.INTEGER,
+    link: {
+        type: DataTypes.STRING,
         allowNull: false,
         references: {
             model: Item,
-            key: 'ID'
-        },
-        onDelete: 'CASCADE'
+            key: 'link'
+        }
     },
     data: {
         type: DataTypes.JSON

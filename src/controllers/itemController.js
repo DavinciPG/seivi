@@ -33,6 +33,19 @@ async function findItem(link) {
     }
 }
 
+async function findItemById(id) {
+    try {
+        const item = await Item.findOne({
+            where: { ID: id }
+        });
+
+        return item;
+    } catch(error) {
+        console.error(error);
+    }
+
+}
+
 async function createItem(link, scraper_name) {
     try {
         const scraper = await scraperModelController.findScraper(scraper_name);
@@ -60,4 +73,4 @@ async function deleteItem(link) {
     }
 }
 
-module.exports = { getAllItems, createItem, deleteItem, findItem };
+module.exports = { getAllItems, createItem, deleteItem, findItem, findItemById };

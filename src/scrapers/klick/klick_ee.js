@@ -13,7 +13,7 @@ async function scrape(entry, options) {
 
         const discount = $('div.discount-wrapper span.price-discount').text().trim();
 
-        await scrapedData.createScrapedData(entry.ID, JSON.stringify({
+        await scrapedData.createScrapedData(entry.link, JSON.stringify({
             price: dataPrice,
             discount: discount
         }));

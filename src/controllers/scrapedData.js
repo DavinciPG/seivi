@@ -1,11 +1,12 @@
 const ScraperData = require('../database/models/scrapedData');
+const Item = require('../database/models/item');
 
 const _ = require('lodash');
 
 async function getAllScrapedData() {
     try {
         const scrapedData = await ScraperData.findAll({
-            attributes: ['ID', 'item_id', 'data', 'scraped_at'],
+            attributes: ['ID', 'link', 'data', 'scraped_at'],
         });
 
         return scrapedData;
@@ -17,7 +18,8 @@ async function getAllScrapedData() {
 async function getScrapedDataForUser(user_id) {
     try {
         const scrapedData = await ScraperData.findAll({
-            attributes: ['ID', 'item_id', 'data', 'scraped_at']
+            where: { user_id },
+            attributes: ['ID', 'link', 'data', 'scraped_at']
         });
 
         return scrapedData;
@@ -26,11 +28,11 @@ async function getScrapedDataForUser(user_id) {
     }
 }
 
-async function getScrapedDataForUserByItemId(user_id, item_id) {
+async function getScrapedDataForUserByLink(user_id, link) {
     try {
         const scrapedData = await ScraperData.findAll({
-            where: { item_id },
-            attributes: ['ID', 'item_id', 'data', 'scraped_at']
+            where: { link, user_id },
+            attributes: ['ID', 'link', 'data', 'scraped_at']
         });
 
         return scrapedData;
@@ -39,12 +41,12 @@ async function getScrapedDataForUserByItemId(user_id, item_id) {
     }
 }
 
-async function createScrapedData(item_id, data) {
+async function createScrapedData(link, data) {
     try {
         // no reason to duplicate data
         const existingData = await ScraperData.findOne({
             where: {
-                item_id
+                link
             },
             order: [['scraped_at', 'DESC']]
         });
@@ -52,8 +54,16 @@ async function createScrapedData(item_id, data) {
         if(existingData && _.isEqual(existingData.data, JSON.parse(data)))
             return null;
 
+        // fix to remove errors when the item gets deleted mid-scrape
+        const itemExists = await Item.findOne({
+            where: { link: link }
+        });
+
+        if(!itemExists)
+            return null;
+
         const scrapedData = await ScraperData.create({
-            item_id,
+            link,
             data: JSON.parse(data)
         });
 
@@ -63,4 +73,4 @@ async function createScrapedData(item_id, data) {
     }
 }
 
-module.exports = { getAllScrapedData, createScrapedData, getScrapedDataForUser, getScrapedDataForUserByItemId };
+module.exports = { getAllScrapedData, createScrapedData, getScrapedDataForUser, getScrapedDataForUserByLink };

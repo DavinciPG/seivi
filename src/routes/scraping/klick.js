@@ -100,19 +100,16 @@ router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     {
         const scrapedData = await scrapedDataController.getScrapedDataForUser(req.session.user.id);
         const scrapeSettings = await userScraperSettingsController.getAllScrapeSettings(req.session.user.id);
-        const filteredData = scrapedData.map(item => {
-            const data = item.dataValues.data;
-            const itemId = item.dataValues.item_id;
-
-            const setting = scrapeSettings.find(setting => setting.dataValues.item_id === itemId);
+        const filteredData = await Promise.all(scrapedData.map(async item => {
+            const setting = await findSettingByLink(item.dataValues.link, scrapeSettings);
             if(setting) {
                 const selectedParameters = setting.dataValues.selected_parameters;
 
                 const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
 
-                const filteredDataObject = Object.keys(data).reduce((result, key) => {
+                const filteredDataObject = Object.keys(item.dataValues.data).reduce((result, key) => {
                     if (!excludeKeys.includes(key)) {
-                        result[key] = data[key];
+                        result[key] = item.dataValues.data[key];
                     }
                     return result;
                 }, {});
@@ -121,7 +118,7 @@ router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
             }
 
             return item.dataValues.data;
-        });
+        }));
 
         res.json(filteredData);
     } catch (error) {
@@ -129,5 +126,15 @@ router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+async function findSettingByLink(itemLink, scrapeSettings) {
+    for (const setting of scrapeSettings) {
+        const item = await itemController.findItemById(setting.dataValues.item_id);
+        if (item.dataValues.link === itemLink) {
+            return setting;
+        }
+    }
+    return null;
+}
 
 module.exports = router;
