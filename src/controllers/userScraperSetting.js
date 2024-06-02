@@ -10,7 +10,18 @@ async function getAllScrapeSettings(user_id) {
     } catch(error) {
         console.error(error);
     }
+}
 
+async function getAllScrapeSettingsForItem(item_id) {
+    try {
+        const userScraperSettings = await UserScraperSetting.findAll({
+            where: { item_id }
+        });
+
+        return userScraperSettings;
+    } catch(error) {
+        console.error(error);
+    }
 }
 
 async function getUserScraperSetting(user_id, item_id) {
@@ -39,4 +50,14 @@ async function createUserScraperSetting(user_id, item_id, parameters) {
     }
 }
 
-module.exports = { getUserScraperSetting, createUserScraperSetting, getAllScrapeSettings };
+async function deleteUserScraperSetting(user_id, item_id) {
+    try {
+        await UserScraperSetting.destroy({
+            where: { user_id, item_id }
+        });
+    } catch(error) {
+        console.error(error);
+    }
+}
+
+module.exports = { getUserScraperSetting, createUserScraperSetting, getAllScrapeSettings, deleteUserScraperSetting, getAllScrapeSettingsForItem };
