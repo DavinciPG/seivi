@@ -3,6 +3,7 @@ const router = express.Router();
 
 const { checkNotAuthenticated, checkAuthenticated } = require('../../handlers/authMiddleware');
 
+const Item = require('../../database/models/item');
 const itemController = require('../../controllers/itemController');
 const userScraperSettingsController = require('../../controllers/userScraperSetting');
 const scrapedDataController = require('../../controllers/scrapedData');
@@ -94,31 +95,47 @@ router.delete(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     }
 });
 
-// testing endpoint to display data
 router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     try
     {
-        const scrapedData = await scrapedDataController.getScrapedDataForUser(req.session.user.id);
         const scrapeSettings = await userScraperSettingsController.getAllScrapeSettings(req.session.user.id);
-        const filteredData = await Promise.all(scrapedData.map(async item => {
-            const setting = await findSettingByLink(item.dataValues.link, scrapeSettings);
-            if(setting) {
-                const selectedParameters = setting.dataValues.selected_parameters;
 
-                const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
+        const link_list = [];
+        for(const setting of scrapeSettings) {
+            const item = await itemController.findItemById(setting.dataValues.item_id);
+            link_list.push(item.dataValues.link);
+        }
 
-                const filteredDataObject = Object.keys(item.dataValues.data).reduce((result, key) => {
-                    if (!excludeKeys.includes(key)) {
-                        result[key] = item.dataValues.data[key];
-                    }
-                    return result;
-                }, {});
-    
-                item.dataValues.data = filteredDataObject;
+        const scrapedData = await scrapedDataController.getAllScrapedDataForLinks(link_list);
+        const filteredData = [];
+
+        const getLinkById = async (id) => {
+            const item = await Item.findByPk(id, { attributes: ['link'] });
+            return item ? item.link : null;
+        };
+
+        for (const setting of scrapeSettings) {
+            const link = await getLinkById(setting.dataValues.item_id);
+            if (link) {
+                const relevantData = scrapedData.filter(item => item.dataValues.link === link);
+                for (const item of relevantData) {
+                    console.log(item);
+                    const selectedParameters = setting.dataValues.selected_parameters;
+
+                    const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
+
+                    const filteredDataObject = Object.keys(item.dataValues.data).reduce((result, key) => {
+                        if (!excludeKeys.includes(key)) {
+                            result[key] = item.dataValues.data[key];
+                        }
+                        return result;
+                    }, {});
+
+                    item.dataValues.data = filteredDataObject;
+                    filteredData.push(item);
+                }
             }
-
-            return item.dataValues.data;
-        }));
+        }
 
         res.json(filteredData);
     } catch (error) {
@@ -126,15 +143,5 @@ router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
-async function findSettingByLink(itemLink, scrapeSettings) {
-    for (const setting of scrapeSettings) {
-        const item = await itemController.findItemById(setting.dataValues.item_id);
-        if (item.dataValues.link === itemLink) {
-            return setting;
-        }
-    }
-    return null;
-}
 
 module.exports = router;

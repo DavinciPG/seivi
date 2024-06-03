@@ -3,10 +3,13 @@ const Item = require('../database/models/item');
 
 const _ = require('lodash');
 
+const { Op } = require('sequelize');
+
 async function getAllScrapedData() {
     try {
         const scrapedData = await ScraperData.findAll({
             attributes: ['ID', 'link', 'data', 'scraped_at'],
+            order: [['link'], ['scraped_at', 'DESC']]
         });
 
         return scrapedData;
@@ -15,24 +18,40 @@ async function getAllScrapedData() {
     }
 }
 
-async function getScrapedDataForUser(user_id) {
+async function getAllScrapedDataForLinks(link_list) {
     try {
         const scrapedData = await ScraperData.findAll({
-            where: { user_id },
-            attributes: ['ID', 'link', 'data', 'scraped_at']
+            where: {
+                link: {
+                    [Op.in]: link_list
+                }
+            },
+            attributes: ['ID', 'link', 'data', 'scraped_at'],
+            order: [['link'], ['scraped_at', 'DESC']]
         });
 
-        return scrapedData;
+        const groupedData = scrapedData.reduce((acc, item) => {
+            if (!acc[item.dataValues.link]) {
+                acc[item.dataValues.link] = [];
+            }
+            if (acc[item.dataValues.link].length < 2) {
+                acc[item.dataValues.link].push(item);
+            }
+            return acc;
+        }, {});
+
+        return Object.values(groupedData).flat();;
     } catch(error) {
         console.error(error);
     }
 }
 
-async function getScrapedDataForUserByLink(user_id, link) {
+async function getScrapedDataByLink(link) {
     try {
         const scrapedData = await ScraperData.findAll({
-            where: { link, user_id },
-            attributes: ['ID', 'link', 'data', 'scraped_at']
+            where: { link },
+            attributes: ['ID', 'link', 'data', 'scraped_at'],
+            order: [['link'], ['scraped_at', 'DESC']]
         });
 
         return scrapedData;
@@ -73,4 +92,4 @@ async function createScrapedData(link, data) {
     }
 }
 
-module.exports = { getAllScrapedData, createScrapedData, getScrapedDataForUser, getScrapedDataForUserByLink };
+module.exports = { getAllScrapedData, createScrapedData, getScrapedDataByLink, getAllScrapedDataForLinks };
