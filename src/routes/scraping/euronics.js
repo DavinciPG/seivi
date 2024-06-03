@@ -9,13 +9,13 @@ const userScraperSettingsController = require('../../controllers/userScraperSett
 const scrapedDataController = require('../../controllers/scrapedData');
 
 // store global variable to make it easier to change the scraper name
-const scraperName = 'klick';
-const linkRegex = /^(https:\/\/)?www\.klick\.ee\/.*$/;
+const scraperName = 'euronics';
+const linkRegex = /^(https:\/\/)?www\.euronics\.ee\/.*$/;
 
 /* 
-    @KLICK SCRAPER:
-    - scraperName: klick
-    - scraper data: price, discount
+    @EURONICS SCRAPER:
+    - scraperName: euronics
+    - scraper data: price
 */
 
 // @todo: @DavinciPG - I will leave optimization to the big man @treumuth
@@ -36,7 +36,7 @@ router.post(`/${scraperName}`, checkAuthenticated, async (req, res) => {
             return res.status(400).json({ message: 'Scraper data is required' });
         }
 
-        // @note: scraperData = table of items to scraper ex: [price, discount]
+        // @note: scraperData = table of items to scraper ex: [price]
         // @todo: unsafe, scraper_data should be validated
 
         const foundItem = await itemController.findItem(link);
@@ -90,55 +90,6 @@ router.delete(`/${scraperName}`, checkAuthenticated, async (req, res) => {
         }
 
         return res.status(200).json({ message: 'Scraper entry deleted successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
-    try
-    {
-        const scrapeSettings = await userScraperSettingsController.getAllScrapeSettings(req.session.user.id);
-
-        const link_list = [];
-        for(const setting of scrapeSettings) {
-            const item = await itemController.findItemById(setting.dataValues.item_id);
-            link_list.push(item.dataValues.link);
-        }
-
-        const scrapedData = await scrapedDataController.getAllScrapedDataForLinks(link_list);
-        const filteredData = [];
-
-        const getLinkById = async (id) => {
-            const item = await Item.findByPk(id, { attributes: ['link'] });
-            return item ? item.link : null;
-        };
-
-        for (const setting of scrapeSettings) {
-            const link = await getLinkById(setting.dataValues.item_id);
-            if (link) {
-                const relevantData = scrapedData.filter(item => item.dataValues.link === link);
-                for (const item of relevantData) {
-                    console.log(item);
-                    const selectedParameters = setting.dataValues.selected_parameters;
-
-                    const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
-
-                    const filteredDataObject = Object.keys(item.dataValues.data).reduce((result, key) => {
-                        if (!excludeKeys.includes(key)) {
-                            result[key] = item.dataValues.data[key];
-                        }
-                        return result;
-                    }, {});
-
-                    item.dataValues.data = filteredDataObject;
-                    filteredData.push(item);
-                }
-            }
-        }
-
-        res.json(filteredData);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

@@ -1,7 +1,9 @@
 const klickScraper = require('../scrapers/klick/klick_ee');
+const euronicsScraper = require('../scrapers/euronics_ee');
 
 const scrapers = {
-    'klick': klickScraper
+    'klick': klickScraper,
+    'euronics': euronicsScraper,
 };
 
 function runScraper(scraperName, entry, options) {
