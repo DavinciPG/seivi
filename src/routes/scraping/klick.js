@@ -16,8 +16,9 @@ const linkRegex = /^(https:\/\/)?(www\.)?klick\.ee\/[a-zA-Z0-9\-]+$/;
     @KLICK SCRAPER:
     - scraperName: klick
     - scraper data: price, discount
-
 */
+
+// @todo: @DavinciPG - I will leave optimization to the big man @treumuth
 
 router.post(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     try {

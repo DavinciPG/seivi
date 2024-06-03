@@ -3,68 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scraper Data</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: left;
-        }
-    </style>
+    <title>Seivi App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Scraper Data</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Price</th>
-                <th>Discount</th>
-            </tr>
-        </thead>
-        <tbody id="data-table-body">
-           
-        </tbody>
-    </table>
-
+    <div class="container">
+        <h1 class="mt-5">Seivi App</h1>
+        <div class="mt-4">
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+        </div>
+        <div class="mt-4">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" class="form-control" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+        <div class="mt-4">
+            <h2>Logout</h2>
+            <button id="logoutButton" class="btn btn-danger">Logout</button>
+        </div>
+        <div class="mt-4">
+            <h2>Choose Scraper</h2>
+            <div>
+                <button class="btn btn-secondary scraperButton" data-scraper="euronics">Euronics</button>
+                <button class="btn btn-secondary scraperButton" data-scraper="klick">Klick</button>
+                <button class="btn btn-secondary scraperButton" data-scraper="auto24">Auto24</button>
+                <button class="btn btn-secondary scraperButton" data-scraper="kv.ee">Kv.ee</button>
+            </div>
+        </div>
+        <div class="mt-4">
+            <h2>Scrape</h2>
+            <form id="scrapeForm">
+                <div class="form-group">
+                    <label for="scrapeLink">Link</label>
+                    <input type="url" class="form-control" id="scrapeLink" required>
+                </div>
+                <div class="form-group">
+                    <label>Scrape Data</label>
+                    <div id="scrapeDataCheckboxes"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Scraper Entry</button>
+            </form>
+        </div>
+        <div class="mt-4">
+            <h2>Delete Scrape</h2>
+            <form id="deleteScrapeForm">
+                <div class="form-group">
+                    <label for="deleteScrapeLink">Link</label>
+                    <input type="url" class="form-control" id="deleteScrapeLink" required>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Scraper Entry</button>
+            </form>
+        </div>
+        <div class="mt-4">
+            <h2>View Scraped Data</h2>
+            <button id="viewScrapedDataButton" class="btn btn-info">View Scraped Data</button>
+            <pre id="scrapedDataOutput" class="mt-3"></pre>
+        </div>
+    </div>
+    
     <script>
-        async function fetchScraperData() {
-            try {
-                const response = await fetch('/scrapers/klick/data');
-                const data = await response.json();
-                const tableBody = document.getElementById('data-table-body');
-                
-                tableBody.innerHTML = '';
-                
-                data.forEach(item => {
-                    const row = document.createElement('tr');
-                    const idCell = document.createElement('td');
-                    const priceCell = document.createElement('td');
-                    const discountCell = document.createElement('td');
-                    
-                    idCell.textContent = item.id;
-                    priceCell.textContent = item.price;
-                    discountCell.textContent = item.discount;
-                    
-                    row.appendChild(idCell);
-                    row.appendChild(priceCell);
-                    row.appendChild(discountCell);
-                    
-                    tableBody.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Error fetching scraper data:', error);
+        let currentScraper = 'klick';
+
+        document.querySelectorAll('.scraperButton').forEach(button => {
+            button.addEventListener('click', function () {
+                currentScraper = this.getAttribute('data-scraper');
+                generateScraperCheckboxes(currentScraper);
+            });
+        });
+
+        function generateScraperCheckboxes(scraper) {
+            const checkboxesContainer = document.getElementById('scrapeDataCheckboxes');
+            checkboxesContainer.innerHTML = '';
+            let parameters = [];
+
+            switch (scraper) {
+                case 'euronics':
+                    parameters = ['price', 'discount', 'availability'];
+                    break;
+                case 'klick':
+                    parameters = ['price', 'discount'];
+                    break;
+                case 'auto24':
+                    parameters = ['price', 'year', 'mileage'];
+                    break;
+                case 'kv.ee':
+                    parameters = ['price', 'location', 'area'];
+                    break;
+                default:
+                    break;
             }
+
+            parameters.forEach(param => {
+                const checkbox = document.createElement('div');
+                checkbox.classList.add('form-check');
+                checkbox.innerHTML = `
+                    <input class="form-check-input" type="checkbox" value="" id="${param}" data-param="${param}">
+                    <label class="form-check-label" for="${param}">
+                        ${param.charAt(0).toUpperCase() + param.slice(1)}
+                    </label>
+                `;
+                checkboxesContainer.appendChild(checkbox);
+            });
         }
 
-        window.onload = fetchScraperData;
+        document.getElementById('registerForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, email })
+            });
+
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', async function () {
+            const response = await fetch('/logout', {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        document.getElementById('scrapeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const link = document.getElementById('scrapeLink').value;
+            const checkboxes = document.querySelectorAll('#scrapeDataCheckboxes .form-check-input');
+            const scraperData = {};
+
+            checkboxes.forEach(checkbox => {
+                scraperData[checkbox.getAttribute('data-param')] = checkbox.checked;
+            });
+
+            const response = await fetch(`/scrapers/${currentScraper}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link, scraperData })
+            });
+
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        document.getElementById('deleteScrapeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const link = document.getElementById('deleteScrapeLink').value;
+
+            const response = await fetch(`/scrapers/${currentScraper}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link })
+            });
+
+            const data = await response.json();
+            alert(data.message);
+        });
+
+        document.getElementById('viewScrapedDataButton').addEventListener('click', async function () {
+            const response = await fetch(`/scrapers/${currentScraper}`, {
+                method: 'GET'
+            });
+
+            const data = await response.json();
+            document.getElementById('scrapedDataOutput').textContent = JSON.stringify(data, null, 2);
+        });
+
+        // Initialize the checkboxes for the default scraper
+        generateScraperCheckboxes(currentScraper);
     </script>
 </body>
 </html>
