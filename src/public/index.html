@@ -205,7 +205,7 @@
         });
 
         document.getElementById('viewScrapedDataButton').addEventListener('click', async function () {
-            const response = await fetch(`/scrapers/${currentScraper}`, {
+            const response = await fetch(`/scrapers/data`, {
                 method: 'GET'
             });
 

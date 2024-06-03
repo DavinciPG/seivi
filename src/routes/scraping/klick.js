@@ -96,7 +96,7 @@ router.delete(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     }
 });
 
-router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
+router.get(`/data`, checkAuthenticated, async (req, res) => {
     try
     {
         const scrapeSettings = await userScraperSettingsController.getAllScrapeSettings(req.session.user.id);
@@ -120,7 +120,6 @@ router.get(`/${scraperName}`, checkAuthenticated, async (req, res) => {
             if (link) {
                 const relevantData = scrapedData.filter(item => item.dataValues.link === link);
                 for (const item of relevantData) {
-                    console.log(item);
                     const selectedParameters = setting.dataValues.selected_parameters;
 
                     const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
