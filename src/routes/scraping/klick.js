@@ -20,6 +20,29 @@ const linkRegex = /^(https:\/\/)?www\.klick\.ee\/.*$/;
 
 // @todo: @DavinciPG - I will leave optimization to the big man @treumuth
 
+const defaultJson = {
+    "price": true,
+    "discount": true
+};
+
+const isValidScraperData = (scraperData) => {
+    const keys = Object.keys(scraperData);
+    const defaultKeys = Object.keys(defaultJson);
+    
+    if (keys.length !== defaultKeys.length) {
+        return false;
+    }
+
+    for (let key of keys) {
+        if (!defaultJson.hasOwnProperty(key)) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+
 router.post(`/${scraperName}`, checkAuthenticated, async (req, res) => {
     try {
         const { link, scraperData } = req.body;
@@ -34,6 +57,10 @@ router.post(`/${scraperName}`, checkAuthenticated, async (req, res) => {
 
         if(!scraperData || scraperData.length === 0) {
             return res.status(400).json({ message: 'Scraper data is required' });
+        }
+
+        if (!isValidScraperData(scraperData)) {
+            return res.status(400).json({ message: 'Invalid scraper data format' });
         }
 
         // @note: scraperData = table of items to scraper ex: [price, discount]
