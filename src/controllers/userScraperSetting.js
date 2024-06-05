@@ -60,4 +60,16 @@ async function deleteUserScraperSetting(user_id, item_id) {
     }
 }
 
-module.exports = { getUserScraperSetting, createUserScraperSetting, getAllScrapeSettings, deleteUserScraperSetting, getAllScrapeSettingsForItem };
+async function updateUserScraperSettingParameters(user_id, item_id, parameters) {
+    try {
+        await UserScraperSetting.update({
+            selected_parameters: JSON.parse(JSON.stringify(parameters))
+        }, {
+            where: { user_id, item_id }
+        });
+    } catch(error) {
+        console.error(error);
+    }
+}
+
+module.exports = { getUserScraperSetting, createUserScraperSetting, getAllScrapeSettings, deleteUserScraperSetting, getAllScrapeSettingsForItem, updateUserScraperSettingParameters };
