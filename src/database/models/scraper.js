@@ -1,28 +1,33 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../../database');
 
-const Scraper = sequelize.define('Scraper', {
-    ID: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
+module.exports = (sequelize) => {
+  const Scraper = sequelize.define('Scraper', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
     },
     name: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     supported_parameters: {
-        type: DataTypes.JSON
+      type: DataTypes.JSON
     },
-    createdAt: {
-        type: DataTypes.DATE
+    created_at: {
+      type: DataTypes.DATE
     },
-    updatedAt: {
-        type: DataTypes.DATE
+    updated_at: {
+      type: DataTypes.DATE
     }
-}, {
+  }, {
     tableName: 'Scrapers',
     timestamps: false
-});
+  });
 
-module.exports = Scraper;
+  Scraper.associate = (models) => {
+    Scraper.hasMany(models.Item, { foreignKey: 'scraper_id' });
+  };
+
+  return Scraper;
+};

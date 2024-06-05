@@ -6,16 +6,15 @@ const port = process.env.PORT || 3000;
 const path = require('path');
 
 // scraper
-const { loadScraperList } = require('./scrapers/list');
-const { runAllScrapers } = require('./controllers/scraperController');
+const ScraperController = require('./controllers/ScraperController');
 
 // Import handlers
-const corsHandler = require('./handlers/cors');
-const rateLimiter = require('./handlers/rateLimiter');
-const sessionHandler = require('./handlers/session');
+const corsHandler = require('./middleware/cors');
+const rateLimiter = require('./middleware/rateLimiter');
+const sessionHandler = require('./middleware/session');
 
 // Import routes
-const routes = require('./routes');
+const UserRouter = require('./routes/UserRouter');
 
 // Middleware
 app.use(rateLimiter);
@@ -26,14 +25,12 @@ app.use(sessionHandler);
 // @todo: remove when frontend is ready
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
-app.use('/', routes);
-
 // run the scraper alongside the server
-loadScraperList().then(() => {
-  runAllScrapers();
-  setInterval(runAllScrapers, 1000 * 60 * 5); // call this every 5 minutes
-});
+ScraperController.runAllScrapers();
+setInterval(ScraperController.runAllScrapers, 1000 * 60 * 5);
+
+// Handle Routes
+app.use('/api', UserRouter);
 
 // Start server
 app.listen(port, () => {
