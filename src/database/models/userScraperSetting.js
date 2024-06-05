@@ -39,5 +39,9 @@ module.exports = (sequelize) => {
     timestamps: false
   });
 
+  UserScraperSetting.associate = models => {
+    UserScraperSetting.belongsTo(models.Item, { foreignKey: 'item_id' });
+  };
+
   return UserScraperSetting;
 };

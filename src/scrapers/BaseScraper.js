@@ -3,8 +3,16 @@ const cheerio = require('cheerio');
 
 class BaseScraper {
     async fetch(url) {
-        const response = await axios.get(url);
-        return { data: response.data, status: response.status };
+        try {
+            const response = await axios.get(url);
+            return { data: response.data, status: response.status };
+        } catch (error) {
+            if (error.response) {
+                return { data: null, status: error.response.status };
+            } else {
+                throw new Error(error.message);
+            }
+        }
     }
     
     async data(axios_data) {

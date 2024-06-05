@@ -1,6 +1,7 @@
 const { parentPort, workerData } = require('worker_threads');
 
 const ScraperController = require('../controllers/ScraperController');
+const ScrapeDataController = require('../controllers/ScrapeDataController');
 
 /**
  * Validates the worker data to ensure all required fields are present.
@@ -38,6 +39,18 @@ async function run() {
         }
 
         const result = await ScraperController.RunScraper(workerData.scraperName, workerData.entry, workerData.options);
+
+        if(workerData.entry.invalid) {
+            console.log(`Invalid entry: ${JSON.stringify(workerData.entry)}`);
+            parentPort.postMessage({ invalid: true, data: { entry: workerData.entry } });
+            return;
+        }
+
+        // @DavinciPG - @todo: Maybe some result validation here
+        // @DavinciPG - @todo: InsertScrapeData returns a boolean so we can check if the data was inserted
+        if(!result.hasOwnProperty('error'))
+            await ScrapeDataController.InsertScrapeData(workerData.entry.link, JSON.stringify(result));
+
         parentPort.postMessage({ success: true, result, data: { entry: workerData.entry } });
 
         if(workerData.options.debug) {

@@ -56,7 +56,7 @@ class UserController extends BaseController {
             });
 
             req.session.user = {
-                id: user.ID,
+                id: user.id,
                 username: user.username,
                 email: user.email
             }
@@ -91,7 +91,7 @@ class UserController extends BaseController {
             }
 
             req.session.user = {
-                id: user.ID,
+                id: user.id,
                 username: user.username,
                 email: user.email
             }

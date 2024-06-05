@@ -23,8 +23,9 @@ class ScraperController {
             if (!scraper) {
                 return { error: `Scraper '${ScraperName}' not found` };
             }
-
-            return await scraper.scrape(Entry, Options);
+            
+            const result = await scraper.scrape(Entry, Options);
+            return result;
         } catch (error) {
             return { error: error.message };
         }
@@ -40,7 +41,7 @@ class ScraperController {
                 }],
             });
 
-            for (const scraperEntry of Items) {
+            for (let scraperEntry of Items) {
                 if (scraperEntry.dataValues.invalid) {
                     // @DavinciPG - @todo: Implement invalid item handling, usually means page returns a 404
                     continue;
@@ -53,24 +54,26 @@ class ScraperController {
         }
     }
 
-    runScraperWorker(scraperEntry) {
-        const json_data = scraperEntry.toJSON();
+    runScraperWorker(scraperEntry, debug = false) {
         const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
             workerData: {
                 scraperName: scraperEntry.Scraper.name,
-                entry: json_data,
-                options: { debug: false } // set debug to true when you want the scraper to log information for each link
+                entry: JSON.parse(JSON.stringify(scraperEntry)),
+                options: { debug } // set debug to true when you want the scraper to log information for each link
             }
         });
 
         worker.on('message', async (message) => {
+            // @DavinciPG - @todo: fix invalid update
             if(message.invalid)
             {
-                // @DavinciPG - @todo: doesn't work atm since message.invalid isn't a thing
+                if(debug)
+                    console.log(`Scraper ${scraperEntry.Scraper.name} invalid entry for ${scraperEntry.link}`);
                 models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
             } else if (message.success) {
                 // you can debug the result here if needed
-                //console.log(`Scraper ${scraperEntry.Scraper.name} completed successfully for ${scraperEntry.link}`);
+                if(debug)
+                    console.log(`Scraper ${scraperEntry.Scraper.name} completed successfully for ${scraperEntry.link}`);
             } else {
                 console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
             }
@@ -78,9 +81,6 @@ class ScraperController {
 
         worker.on('error', (error) => {
             console.error(`Worker error for ${scraperEntry.Scraper.name}:`, error);
-            if(error.message == 'Page not found') {
-               models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
-            }
         });
 
         worker.on('exit', (code) => {

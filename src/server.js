@@ -15,6 +15,7 @@ const sessionHandler = require('./middleware/session');
 
 // Import routes
 const UserRouter = require('./routes/UserRouter');
+const ScrapeRouter = require('./routes/ScraperRouter');
 
 // Middleware
 app.use(rateLimiter);
@@ -31,6 +32,7 @@ setInterval(ScraperController.runAllScrapers, 1000 * 60 * 5);
 
 // Handle Routes
 app.use('/api', UserRouter);
+app.use('/api', ScrapeRouter);
 
 // Start server
 app.listen(port, () => {
