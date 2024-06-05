@@ -7,6 +7,7 @@ const Item = require('../database/models/item');
 
 const userScraperSettingsController = require('../controllers/userScraperSetting');
 const itemController = require('../controllers/itemController');
+const scrapedDataController = require('../controllers/scrapedData');
 
 router.get(`/data`, checkAuthenticated, async (req, res) => {
     try
@@ -35,7 +36,6 @@ router.get(`/data`, checkAuthenticated, async (req, res) => {
                     const selectedParameters = setting.dataValues.selected_parameters;
 
                     const excludeKeys = Object.keys(selectedParameters).filter(key => !selectedParameters[key]);
-
                     const filteredDataObject = Object.keys(item.dataValues.data).reduce((result, key) => {
                         if (!excludeKeys.includes(key)) {
                             result[key] = item.dataValues.data[key];
