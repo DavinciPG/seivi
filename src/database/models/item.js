@@ -22,6 +22,10 @@ module.exports = (sequelize) => {
         model: 'Scrapers',
         key: 'ID'
       }
+    },
+    invalid: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
   }, {
     tableName: 'Items',

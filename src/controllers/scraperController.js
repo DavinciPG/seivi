@@ -15,8 +15,12 @@ class ScraperController {
     constructor() {
         this.runScraperWorker = this.runScraperWorker.bind(this);
         this.runAllScrapers = this.runAllScrapers.bind(this);
+        this.GetScrapers = this.GetScrapers.bind(this);
     }
 
+    async GetScrapers() {
+        return Object.keys(ActiveScrapers);
+    }
     async RunScraper(ScraperName, Entry, Options = { debug: false }) {
         try {
             const scraper = ActiveScrapers[ScraperName];
