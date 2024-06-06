@@ -56,7 +56,6 @@ async function run() {
 
         if(workerData.options.debug) {
             console.log(`Scraper completed: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
-            await LoggingController.CreateLog(workerData.entry.link, 'info', `Scraper completed ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
         }
     } catch (error) {
         if(workerData.options.debug) {

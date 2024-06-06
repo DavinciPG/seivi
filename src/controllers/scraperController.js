@@ -3,6 +3,7 @@ const path = require('path');
 
 const KlickScraper = require('../scrapers/Klick');
 const EuronicsScraper = require('../scrapers/Euronics');
+const Auto24Scraper = require('../scrapers/Auto24');
 
 const LoggingController = require('./LoggingController');
 
@@ -18,6 +19,11 @@ const ActiveScrapers = {
         id: 2, 
         scraper: EuronicsScraper,
         regex: /^(https:\/\/)?www\.euronics\.ee\/.*$/
+    },
+    'auto24': {
+        id: 3,
+        scraper: Auto24Scraper,
+        regex: /^(https:\/\/)?www\.auto24\.ee\/.*$/
     }
 };
 
@@ -29,8 +35,9 @@ class ScraperController {
     }
 
     async GetScrapers() {
-        return Object.keys(ActiveScrapers);
+        return ActiveScrapers;
     }
+
     async RunScraper(ScraperName, Entry, Options = { debug: false }) {
         try {
             const scraper = ActiveScrapers[ScraperName];
@@ -61,7 +68,7 @@ class ScraperController {
                     continue;
                 }
 
-                this.runScraperWorker(scraperEntry, false);
+                this.runScraperWorker(scraperEntry, true);
             }
         } catch (error) {
             console.error('Error getting scraper list:', error);
@@ -92,7 +99,7 @@ class ScraperController {
                     models.Logging.create({
                         link: scraperEntry.link,
                         type: 'success',
-                        message: 'Scraper completed'
+                        message: `Scraper completed ${scraperEntry.Scraper.name} for entry: ${JSON.stringify(scraperEntry)}`
                     });
                 }
             } else {

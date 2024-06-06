@@ -2,9 +2,11 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 class BaseScraper {
-    async fetch(url) {
+    async fetch(url, ...options) {
         try {
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                ...options
+            });
             return { data: response.data, status: response.status };
         } catch (error) {
             if (error.response) {

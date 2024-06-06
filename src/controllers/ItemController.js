@@ -90,7 +90,6 @@ class ItemController extends BaseController {
             }
 
             const scraperList = await ScraperController.GetScrapers();
-
             const scraper = scraperList[scraperType];
             if(!scraper) {
                 return res.status(400).json({ error: 'Invalid scraperType' });
