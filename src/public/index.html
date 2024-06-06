@@ -9,6 +9,382 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </head>
 <body>
- 
+    <div class="container mt-5">
+        <h1>Seivi App</h1>
+        
+        <!-- Login Form -->
+        <div id="login-form">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" class="form-control" id="login-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" class="form-control" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <p>Don't have an account? <a href="#" id="show-register">Register here</a></p>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="register-form" style="display:none;">
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" class="form-control" id="register-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" class="form-control" id="register-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+            <p>Already have an account? <a href="#" id="show-login">Login here</a></p>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" style="display:none;">
+            <h2>Welcome, <span id="username-display"></span></h2>
+            <button id="logout" class="btn btn-secondary">Logout</button>
+            
+            <!-- Add Scraper Form -->
+            <h3>Add Scraper</h3>
+            <form id="scraper-form">
+                <div class="form-group">
+                    <label for="scraper-link">Scraper Link</label>
+                    <input type="text" class="form-control" id="scraper-link" required>
+                </div>
+                <div class="form-group">
+                    <label for="scraper-type">Scraper Type</label>
+                    <select class="form-control" id="scraper-type">
+                        <option value="klick">Klick</option>
+                        <option value="euronics">Euronics</option>
+                    </select>
+                </div>
+                <div class="form-group" id="klick-options">
+                    <label>Klick Options</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="klick-price">
+                        <label class="form-check-label" for="klick-price">Price</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="klick-discount">
+                        <label class="form-check-label" for="klick-discount">Discount</label>
+                    </div>
+                </div>
+                <div class="form-group" id="euronics-options" style="display:none;">
+                    <label>Euronics Options</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="euronics-price">
+                        <label class="form-check-label" for="euronics-price">Price</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Scraper</button>
+            </form>
+            
+            <!-- Scraped Data Table -->
+            <h3 class="mt-5">Scraped Data</h3>
+            <table class="table table-bordered" id="scraped-data-table">
+                <thead>
+                    <tr>
+                        <th>Link</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+            
+            <!-- User Scrapers Table -->
+            <h3 class="mt-5">Your Scrapers</h3>
+            <table class="table table-bordered" id="user-scrapers-table">
+                <thead>
+                    <tr>
+                        <th>Link</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const API_URL = 'http://localhost:3000/api'; // Change this to your API URL
+            let token = localStorage.getItem('token') || '';
+
+            $('#show-register').click(function() {
+                $('#login-form').hide();
+                $('#register-form').show();
+            });
+            
+            $('#show-login').click(function() {
+                $('#register-form').hide();
+                $('#login-form').show();
+            });
+
+            // Show relevant options based on scraper type
+            $('#scraper-type').change(function() {
+                if ($(this).val() === 'klick') {
+                    $('#klick-options').show();
+                    $('#euronics-options').hide();
+                } else {
+                    $('#klick-options').hide();
+                    $('#euronics-options').show();
+                }
+            });
+
+            // Check session on page load
+            function checkSession() {
+                    $.ajax({
+                        url: `${API_URL}/sessions`,
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        success: function(response) {
+                            if (response.user) {
+                                $('#username-display').text(response.user.username);
+                                $('#login-form').hide();
+                                $('#main-content').show();
+                                loadScrapedData();
+                                loadUserScrapers();
+                            } else {
+                                token = '';
+                                localStorage.removeItem('token');
+                                $('#login-form').show();
+                                $('#main-content').hide();
+                            }
+                        },
+                        error: function() {
+                            token = '';
+                            localStorage.removeItem('token');
+                            $('#login-form').show();
+                            $('#main-content').hide();
+                        }
+                    });
+            }
+            checkSession();
+
+            // Login Form Submission
+            $('#loginForm').submit(function(e) {
+                e.preventDefault();
+                const username = $('#login-username').val();
+                const password = $('#login-password').val();
+
+                $.ajax({
+                    url: `${API_URL}/sessions`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ username, password }),
+                    success: function(response) {
+                        token = response.token;
+                        localStorage.setItem('token', token);
+                        $('#username-display').text(username);
+                        $('#login-form').hide();
+                        $('#main-content').show();
+                        loadScrapedData();
+                        loadUserScrapers();
+                    },
+                    error: function() {
+                        alert('Login failed');
+                    }
+                });
+            });
+
+            // Register Form Submission
+            $('#registerForm').submit(function(e) {
+                e.preventDefault();
+                const username = $('#register-username').val();
+                const password = $('#register-password').val();
+
+                $.ajax({
+                    url: `${API_URL}/users`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ username, password }),
+                    success: function() {
+                        alert('Registration successful');
+                        $('#register-form').hide();
+                        $('#login-form').show();
+                    },
+                    error: function() {
+                        alert('Registration failed');
+                    }
+                });
+            });
+
+            // Logout
+            $('#logout').click(function() {
+                $.ajax({
+                    url: `${API_URL}/sessions`,
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function() {
+                        token = '';
+                        localStorage.removeItem('token');
+                        $('#main-content').hide();
+                        $('#login-form').show();
+                    },
+                    error: function() {
+                        alert('Logout failed');
+                    }
+                });
+            });
+
+            // Add Scraper Form Submission
+            $('#scraper-form').submit(function(e) {
+                e.preventDefault();
+                const link = $('#scraper-link').val();
+                const scraperType = $('#scraper-type').val();
+
+                const klick_op = {
+                    price: $('#klick-price').is(':checked'),
+                    discount: $('#klick-discount').is(':checked')
+                };
+                
+                const euronics_op = {
+                    price: $('#euronics-price').is(':checked')
+                };
+
+                $.ajax({
+                    url: `${API_URL}/scraping/item`,
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ link, scraperType, selected_parameters: scraperType === 'klick' ? klick_op : euronics_op}),
+                    success: function() {
+                        loadUserScrapers();
+                    },
+                    error: function() {
+                        alert('Failed to add scraper');
+                    }
+                });
+            });
+
+            // Load Scraped Data
+            function loadScrapedData() {
+                $.ajax({
+                    url: `${API_URL}/scraping/user/data`,
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function(data) {
+                        const tableBody = $('#scraped-data-table tbody');
+                        tableBody.empty();
+                        data.forEach(item => {
+                            tableBody.append(`
+                                <tr>
+                                    <td>${item.link}</td>
+                                    <td>${item.data}</td>
+                                </tr>
+                            `);
+                        });
+                    },
+                    error: function() {
+                        alert('Failed to load scraped data');
+                    }
+                });
+            }
+
+            // Load User Scrapers
+            function loadUserScrapers() {
+                $.ajax({
+                    url: `${API_URL}/scraping/user/items`,
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function(data) {
+                        const tableBody = $('#user-scrapers-table tbody');
+                        tableBody.empty();
+                        data.forEach(item => {
+                            tableBody.append(`
+                                <tr>
+                                    <td>${item.Item.link}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-modify" data-link="${item.Item.link}" data-type="number" data-price="${item.selected_parameters.price}" data-discount="${item.selected_parameters.discount}">Modify</button>
+                                        <button class="btn btn-danger btn-delete" data-link="${item.Item.link}">Delete</button>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+
+                        // Modify Button Click
+                        $('.btn-modify').click(function() {
+                            const link = $(this).data('link');
+                            const type = $(this).data('type');
+                            const price = $(this).data('price');
+                            const discount = $(this).data('discount');
+
+                            $('#scraper-link').val(link);
+                            $('#scraper-type').val(type).change();
+                            if (type === 'klick') {
+                                $('#klick-price').prop('checked', price);
+                                $('#klick-discount').prop('checked', discount);
+                            } else {
+                                $('#euronics-price').prop('checked', price);
+                            }
+
+                            $('#scraper-form').data('link', link);
+                        });
+
+                        // Delete Button Click
+                        $('.btn-delete').click(function() {
+                            const link = $(this).data('link');
+
+                            $.ajax({
+                                url: `${API_URL}/scraping/item`,
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                contentType: 'application/json',
+                                data: JSON.stringify({ link }),
+                                success: function() {
+                                    loadUserScrapers();
+                                },
+                                error: function() {
+                                    alert('Failed to delete scraper');
+                                }
+                            });
+                        });
+                    },
+                    error: function() {
+                        alert('Failed to load user scrapers');
+                    }
+                });
+            }
+
+            // Modify Scraper
+            $('#scraper-form').submit(function(e) {
+                e.preventDefault();
+                const link = $(this).data('link');
+                if (!link) return;
+
+                const type = $('#scraper-type').val();
+                const selected_parameters = {
+                    price: type === 'klick' ? $('#klick-price').is(':checked') : $('#euronics-price').is(':checked'),
+                    discount: type === 'klick' ? $('#klick-discount').is(':checked') : false
+                };
+
+                $.ajax({
+                    url: `${API_URL}/scraping/item`,
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ link, selected_parameters }),
+                    success: function() {
+                        $('#scraper-form').data('link', '');
+                        loadUserScrapers();
+                    },
+                    error: function() {
+                        alert('Failed to modify scraper');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

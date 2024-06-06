@@ -13,6 +13,7 @@ class UserController extends BaseController {
         this.createUser = this.createUser.bind(this);
         this.createSession = this.createSession.bind(this);
         this.deleteSession = this.deleteSession.bind(this);
+        this.getSession = this.getSession.bind(this);
     }
 
     async createUser(req, res) {
@@ -108,6 +109,11 @@ class UserController extends BaseController {
 
                 return res.status(200).json({ message: 'Logout successful' });
             });
+        });
+    }
+    async getSession(req, res) {
+        this.handleRequest(req, res, async () => {
+            return res.status(200).json({ user: req.session.user });
         });
     }
 }

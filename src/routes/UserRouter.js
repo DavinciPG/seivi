@@ -13,6 +13,7 @@ class UserRouter extends BaseRouter {
         this.registerRoute('post', '/users', checkNotAuthenticated, UserController.createUser);
         this.registerRoute('post', '/sessions', checkNotAuthenticated, UserController.createSession);
         this.registerRoute('delete', '/sessions', checkAuthenticated, UserController.deleteSession);
+        this.registerRoute('get', '/sessions', checkAuthenticated, UserController.getSession);
     }
 }
 
