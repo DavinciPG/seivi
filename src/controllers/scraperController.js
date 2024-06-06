@@ -6,6 +6,7 @@ const EuronicsScraper = require('../scrapers/Euronics');
 const Auto24Scraper = require('../scrapers/Auto24');
 
 const LoggingController = require('./LoggingController');
+const BrowserController = require('./BrowserController');
 
 const { models } = require('../database');
 
@@ -62,6 +63,7 @@ class ScraperController {
                 }],
             });
 
+            await BrowserController.InitializeBrowser();
             for (let scraperEntry of Items) {
                 if (scraperEntry.dataValues.invalid) {
                     // @DavinciPG - @note: Skip invalid entries but should we notify the dev?
@@ -70,6 +72,7 @@ class ScraperController {
 
                 this.runScraperWorker(scraperEntry, true);
             }
+            await BrowserController.CloseBrowser();
         } catch (error) {
             console.error('Error getting scraper list:', error);
         }

@@ -36,6 +36,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "lodash": "^4.17.21",
     "mysql2": "^3.10.0",
+    "puppeteer": "^22.10.0",
     "sequelize": "^6.37.3"
   }
 }
