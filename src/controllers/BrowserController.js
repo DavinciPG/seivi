@@ -56,12 +56,12 @@ class BrowserController {
                 await this.InitializeBrowser();
 
             const page = await this.browser.newPage();
-            if (headers) {
-                await page.setExtraHTTPHeaders(headers);
-            }
+
+            await page.setExtraHTTPHeaders(headers);
+
             const response = await page.goto(url, { waitUntil: 'networkidle2' });
 
-            const statusCode = response.status();
+            const statusCode = await response.status();
             const pageContent = await page.content();
 
             await page.close();
