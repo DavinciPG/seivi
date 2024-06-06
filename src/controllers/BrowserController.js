@@ -4,6 +4,19 @@ const path = require('path');
 
 const chromiumPath = path.join(__dirname, '../../drivers/', 'chrome-linux', 'chrome');
 
+const default_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Ch-Ua-Platform': 'Windows'
+}
+
 class BrowserController {
     constructor() {
         this.browser = null;
@@ -37,7 +50,7 @@ class BrowserController {
         }
     }
 
-    async GetPageContent(url, headers) {
+    async GetPageContent(url, headers = default_headers) {
         try {
             if(!this.browser)
                 await this.InitializeBrowser();
@@ -46,10 +59,14 @@ class BrowserController {
             if (headers) {
                 await page.setExtraHTTPHeaders(headers);
             }
-            await page.goto(url, { waitUntil: 'networkidle2' });
-            const data = await page.content();
+            const response = await page.goto(url, { waitUntil: 'networkidle2' });
+
+            const statusCode = response.status();
+            const pageContent = await page.content();
+
             await page.close();
-            return data;
+
+            return { statusCode, pageContent };
         } catch(error) {
             throw new Error(error.message);
         }
