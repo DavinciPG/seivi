@@ -19,7 +19,6 @@ class ScrapeDataController extends BaseController {
      * @returns {boolean} - True if the data was inserted, false otherwise.
      */
     async InsertScrapeData(link, json_data) {
-        // @DavinciPG - @todo: Maybe implement validation?
         try {
             const existingData = await models.ScrapedData.findOne({
                 where: {

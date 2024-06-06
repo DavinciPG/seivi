@@ -105,7 +105,6 @@ class ItemController extends BaseController {
                 }
             });
 
-            // @DavinciPG - @todo: check scraperType against available scrapers, how I am doing it rn is risky
             if(!Item) {
                 Item = await models.Item.create({
                     link,
