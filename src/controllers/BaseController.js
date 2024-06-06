@@ -1,4 +1,4 @@
-// @DavinciPG - @todo: Log errors into a log file
+// @DavinciPG - @note: not gonna log anything here, we will log all we need when we need it
 
 class BaseController {
     handleRequest(req, res, callback) {

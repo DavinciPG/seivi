@@ -53,7 +53,7 @@ class ScraperController {
                     continue;
                 }
 
-                this.runScraperWorker(scraperEntry, true);
+                this.runScraperWorker(scraperEntry, false);
             }
         } catch (error) {
             console.error('Error getting scraper list:', error);

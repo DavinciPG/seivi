@@ -23,9 +23,6 @@ app.use(corsHandler);
 app.use(express.json());
 app.use(sessionHandler);
 
-// @todo: remove when frontend is ready
-app.use(express.static(path.join(__dirname, 'public')));
-
 // run the scraper alongside the server
 ScraperController.runAllScrapers();
 setInterval(ScraperController.runAllScrapers, 1000 * 60 * 5);
