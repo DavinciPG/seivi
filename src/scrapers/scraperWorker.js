@@ -48,9 +48,15 @@ async function run() {
             return;
         }
 
-        // @DavinciPG - @todo: InsertScrapeData returns a boolean so we can check if the data was inserted
-        if(!result.hasOwnProperty('error'))
-            await ScrapeDataController.InsertScrapeData(workerData.entry.link, JSON.stringify(result));
+        if(!result.hasOwnProperty('error')) {
+            const inserted_result = await ScrapeDataController.InsertScrapeData(workerData.entry.link, JSON.stringify(result));
+            if(!inserted_result.success && inserted_result.type === 'INVALID') {
+                // @DavinciPG - setting this as invalid since it's missing item property somehow
+                parentPort.postMessage({ invalid: true, data: { entry: workerData.entry } });
+                console.log(`Scraper hit invalid: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
+                return;
+            }
+        }
 
         parentPort.postMessage({ success: true, result, data: { entry: workerData.entry } });
 

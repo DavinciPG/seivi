@@ -16,7 +16,7 @@ class ScrapeDataController extends BaseController {
      * Logs error details for debugging.
      * @param link - The item link
      * @param {JSON} json_data - The JSON data from the scrape
-     * @returns {boolean} - True if the data was inserted, false otherwise.
+     * @returns {JSON} - Success parameter boolean, TYPE what failed
      */
     async InsertScrapeData(link, json_data) {
         try {
@@ -28,23 +28,24 @@ class ScrapeDataController extends BaseController {
             });
 
             if(existingData && _.isEqual(JSON.parse(existingData.dataValues.data), JSON.parse(json_data)))
-                return false;
+                return { success: false, type: 'EQUAL' };
 
             const itemExists = await models.Item.findOne({
                 where: { link: link }
             });
 
             if(!itemExists)
-                return false;
+                return { success: false, type: 'INVALID' };
 
             await models.ScrapedData.create({
                 link: link,
                 data: JSON.parse(json_data)
             });
 
-            return true;
+            return { success: true, type: 'SUCCESS' };
         } catch (error) {
             console.error('Error inserting scrape data:', error);
+            return { success: false, type: 'ERROR' };
         }
     }
     async GetScrapeDataForUser(req, res) {
