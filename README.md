@@ -43,5 +43,4 @@ If you encounter any issues, please report them [here](https://github.com/Davinc
 ## Contributing
 We welcome contributions! Please fork the repository and submit pull requests.
 ## Credits
-- **Project Owner**: DavinciPG
-- **Contributors**: Margus Treumuth
+- **Project Owners**: DavinciPG, Margus Treumuth
