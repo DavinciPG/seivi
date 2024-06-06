@@ -9,8 +9,16 @@ const LoggingController = require('./LoggingController');
 const { models } = require('../database');
 
 const ActiveScrapers = {
-    'klick': KlickScraper,
-    'euronics': EuronicsScraper
+    'klick': { 
+        id: 1, 
+        scraper: KlickScraper,
+        regex: /^(https:\/\/)?www\.klick\.ee\/.*$/
+    },
+    'euronics': { 
+        id: 2, 
+        scraper: EuronicsScraper,
+        regex: /^(https:\/\/)?www\.euronics\.ee\/.*$/
+    }
 };
 
 class ScraperController {
@@ -30,7 +38,7 @@ class ScraperController {
                 return { error: `Scraper '${ScraperName}' not found` };
             }
             
-            const result = await scraper.scrape(Entry, Options);
+            const result = await scraper.scraper.scrape(Entry, Options);
             return result;
         } catch (error) {
             return { error: error.message };

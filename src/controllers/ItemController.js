@@ -89,7 +89,16 @@ class ItemController extends BaseController {
                 return res.status(400).json({ error: 'Link, scraperType and selected_parameters are required' });
             }
 
-            // @DavinciPG - @todo: check if link is valid and regex for each scraper
+            const scraperList = await ScraperController.GetScrapers();
+
+            const scraper = scraperList[scraperType];
+            if(!scraper) {
+                return res.status(400).json({ error: 'Invalid scraperType' });
+            }
+
+            if(!scraper.regex.test(link)) {
+                return res.status(400).json({ error: 'Invalid link for scraperType' });
+            }
 
             let Item = await models.Item.findOne({
                 where: {
@@ -101,7 +110,7 @@ class ItemController extends BaseController {
             if(!Item) {
                 Item = await models.Item.create({
                     link,
-                    scraper_id: (await ScraperController.GetScrapers()).findIndex(scraper => scraper === scraperType) + 1
+                    scraper_id: scraper.id
                 });
             }
 
