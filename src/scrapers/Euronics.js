@@ -5,7 +5,6 @@ class EuronicsScraper extends BaseScraper {
         try {
             const { data, status } = await this.fetch(Entry.link);
 
-            // @DavinciPG - @todo: implement 404 checking, gotta do some testing, not sure what axios returns for a invalid page
             if(status == 404) {
                 Entry.invalid = true;
                 return { error: 'Page Not Found' };

@@ -4,6 +4,8 @@ const path = require('path');
 const KlickScraper = require('../scrapers/Klick');
 const EuronicsScraper = require('../scrapers/Euronics');
 
+const LoggingController = require('./LoggingController');
+
 const { models } = require('../database');
 
 const ActiveScrapers = {
@@ -47,11 +49,11 @@ class ScraperController {
 
             for (let scraperEntry of Items) {
                 if (scraperEntry.dataValues.invalid) {
-                    // @DavinciPG - @todo: Implement invalid item handling, usually means page returns a 404
+                    // @DavinciPG - @note: Skip invalid entries but should we notify the dev?
                     continue;
                 }
 
-                this.runScraperWorker(scraperEntry);
+                this.runScraperWorker(scraperEntry, true);
             }
         } catch (error) {
             console.error('Error getting scraper list:', error);
@@ -68,18 +70,28 @@ class ScraperController {
         });
 
         worker.on('message', async (message) => {
-            // @DavinciPG - @todo: fix invalid update
             if(message.invalid)
             {
                 if(debug)
                     console.log(`Scraper ${scraperEntry.Scraper.name} invalid entry for ${scraperEntry.link}`);
+
                 models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
+                LoggingController.CreateLog(scraperEntry.link, 'invalid', 'Invalid entry');
             } else if (message.success) {
                 // you can debug the result here if needed
-                if(debug)
+                if(debug) {
                     console.log(`Scraper ${scraperEntry.Scraper.name} completed successfully for ${scraperEntry.link}`);
+                    models.Logging.create({
+                        link: scraperEntry.link,
+                        type: 'success',
+                        message: 'Scraper completed'
+                    });
+                }
             } else {
                 console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
+                if(debug) {
+                    LoggingController.CreateLog(scraperEntry.link, 'error', message.error);
+                }
             }
         });
 

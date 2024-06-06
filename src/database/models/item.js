@@ -35,6 +35,7 @@ module.exports = (sequelize) => {
   Item.associate = (models) => {
     Item.belongsTo(models.Scraper, { foreignKey: 'scraper_id' });
     Item.hasMany(models.UserScraperSetting, { foreignKey: 'item_id' });
+    Item.hasMany(models.Logging, { foreignKey: 'link' });
   };
 
   return Item;

@@ -2,6 +2,7 @@ const { parentPort, workerData } = require('worker_threads');
 
 const ScraperController = require('../controllers/ScraperController');
 const ScrapeDataController = require('../controllers/ScrapeDataController');
+const LoggingController = require('../controllers/LoggingController');
 
 /**
  * Validates the worker data to ensure all required fields are present.
@@ -36,6 +37,7 @@ async function run() {
     try {
         if(workerData.options.debug) {
             console.log(`Starting scraper: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
+            await LoggingController.CreateLog(workerData.entry.link, 'info', `Starting scraper: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
         }
 
         const result = await ScraperController.RunScraper(workerData.scraperName, workerData.entry, workerData.options);
@@ -46,7 +48,6 @@ async function run() {
             return;
         }
 
-        // @DavinciPG - @todo: Maybe some result validation here
         // @DavinciPG - @todo: InsertScrapeData returns a boolean so we can check if the data was inserted
         if(!result.hasOwnProperty('error'))
             await ScrapeDataController.InsertScrapeData(workerData.entry.link, JSON.stringify(result));
@@ -55,6 +56,7 @@ async function run() {
 
         if(workerData.options.debug) {
             console.log(`Scraper completed: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
+            await LoggingController.CreateLog(workerData.entry.link, 'info', `Scraper completed ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
         }
     } catch (error) {
         if(workerData.options.debug) {
