@@ -39,7 +39,6 @@ class BaseScraper {
                 $ = await this.cheerio_data(response.data);
             } else {
                 const { statusCode, pageContent } = await BrowserController.GetPageContent(Entry.link);
-                console.log(`Using BrowserController for entry: ${Entry.link}`);
 
                 if (statusCode !== 200) {
                     return { error: 'Failed Loading Page' };

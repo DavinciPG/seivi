@@ -10,7 +10,7 @@ const LoggingController = require('../controllers/LoggingController');
  * @returns {boolean} - True if valid, false otherwise.
  */
 function validateWorkerData(data) {
-    return data && data.scraperName && data.entry && data.options;
+    return data && data.entries && data.options;
 }
 
 /**
@@ -19,9 +19,7 @@ function validateWorkerData(data) {
  */
 function logError(error) {
     console.error(`Scraper Error: ${error.message}`, {
-        stack: error.stack,
-        scraperName: workerData.scraperName,
-        entry: workerData.entry,
+        stack: error.stack
     });
 }
 
@@ -34,44 +32,50 @@ async function run() {
         return;
     }
 
-    try {
-        if(workerData.options.debug) {
-            console.log(`Starting scraper: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
-            await LoggingController.CreateLog(workerData.entry.link, 'info', `Starting scraper: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
-        }
+    const results = [];
 
-        const result = await ScraperController.RunScraper(workerData.scraperName, workerData.entry, workerData.options);
+    for(const entry of workerData.entries) {
+        try {
+            if (workerData.options.debug) {
+                console.log(`Starting scraper: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+                await LoggingController.CreateLog(entry.link, 'info', `Starting scraper: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+            }
 
-        if(workerData.entry.invalid) {
-            console.log(`Invalid entry: ${JSON.stringify(workerData.entry)}`);
-            parentPort.postMessage({ invalid: true, data: { entry: workerData.entry } });
-            return;
-        }
+            const result = await ScraperController.RunScraper(entry.Scraper.name, entry, workerData.options);
 
-        if(!result.hasOwnProperty('error')) {
-            const inserted_result = await ScrapeDataController.InsertScrapeData(workerData.entry.link, result);
-            if(!inserted_result.success && inserted_result.type === 'INVALID') {
-                // @DavinciPG - setting this as invalid since it's missing item property somehow
-                parentPort.postMessage({ invalid: true, data: { entry: workerData.entry } });
-                console.log(`Scraper hit invalid: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
+            // shouldn't get here since we are not finding invalid entries?
+            if (entry.invalid) {
+                console.log(`Invalid entry: ${JSON.stringify(entry)}`);
+                results.push({ invalid: true, link: entry.link, entry: entry });
                 return;
             }
-        }
 
-        parentPort.postMessage({ success: true, result, data: { entry: workerData.entry } });
+            if (!result.hasOwnProperty('error')) {
+                const inserted_result = await ScrapeDataController.InsertScrapeData(entry.link, result);
+                if (!inserted_result.success && inserted_result.type === 'INVALID') {
+                    // @DavinciPG - setting this as invalid since it's missing item property somehow
+                    results.push({ invalid: true, link: entry.link, entry: entry });
+                    console.log(`Scraper hit invalid: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+                    return;
+                }
+            }
 
-        if(workerData.options.debug) {
-            console.log(`Scraper completed: ${workerData.scraperName} for entry: ${JSON.stringify(workerData.entry)}`);
-        }
-    } catch (error) {
-        if(workerData.options.debug) {
-            logError(error);
-        }
+            results.push({ success: true, result, link: entry.link, entry: entry });
 
-        parentPort.postMessage({ success: false, error: error.message });
-    } finally {
-        process.exit();
+            if (workerData.options.debug) {
+                console.log(`Scraper completed: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+            }
+        } catch (error) {
+            if (workerData.options.debug) {
+                logError(error);
+            }
+
+            results.push({ success: false, error: error.message, link: entry.link, entry: entry });
+        }
     }
+
+    parentPort.postMessage(results);
+    process.exit();
 }
 
 run();

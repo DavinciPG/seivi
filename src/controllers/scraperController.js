@@ -56,67 +56,85 @@ class ScraperController {
     async runAllScrapers() {
         try {
             const Items = await models.Item.findAll({
+                where: {
+                    invalid: false
+                },
                 attributes: ['link', 'scraper_id', 'invalid'],
                 include: [{
                     model: models.Scraper,
                     attributes: ['name'],
-                }],
+                }]
             });
 
-            await BrowserController.InitializeBrowser();
-            for (let scraperEntry of Items) {
-                if (scraperEntry.dataValues.invalid) {
-                    // @DavinciPG - @note: Skip invalid entries but should we notify the dev?
-                    continue;
-                }
+            console.log('Restarting scraper');
 
-                this.runScraperWorker(scraperEntry, true);
+            await BrowserController.InitializeBrowser();
+
+            // Split the array into x lists
+            function splitIntoSublists(array, numSublists) {
+                const sublists = Array.from({ length: numSublists }, () => []);
+                array.forEach((item, index) => {
+                    sublists[index % numSublists].push(item);
+                });
+                return sublists;
             }
-            await BrowserController.CloseBrowser();
+
+            const sublists = splitIntoSublists(Items, 6);
+            const workerPromises = sublists.map((list) => this.runScraperWorker(list, true));
+
+            try {
+                await Promise.all(workerPromises);
+                console.log(`Scraper finished with ${Items.length} entries`);
+            } catch(error) {
+                console.error('Error in worker execution:', error);
+            } finally {
+                await BrowserController.CloseBrowser();
+            }
         } catch (error) {
             console.error('Error getting scraper list:', error);
         }
     }
 
-    runScraperWorker(scraperEntry, debug = false) {
-        const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
-            workerData: {
-                scraperName: scraperEntry.Scraper.name,
-                entry: JSON.parse(JSON.stringify(scraperEntry)),
-                options: { debug } // set debug to true when you want the scraper to log information for each link
-            }
-        });
-
-        worker.on('message', async (message) => {
-            if(message.invalid)
-            {
-                if(debug)
-                    console.log(`Scraper ${scraperEntry.Scraper.name} invalid entry for ${scraperEntry.link}`);
-
-                await models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
-                await LoggingController.CreateLog(scraperEntry.link, 'invalid', 'Invalid entry');
-            } else if (message.success) {
-                // you can debug the result here if needed
-                if(debug) {
-                    console.log(`Scraper ${scraperEntry.Scraper.name} completed successfully for ${scraperEntry.link}`);
-                    await LoggingController.CreateLog(scraperEntry.link, 'success', `Scraper completed ${scraperEntry.Scraper.name} for entry: ${JSON.stringify(scraperEntry)}`);
+    runScraperWorker(sublist, debug = false) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
+                workerData: {
+                    entries: JSON.parse(JSON.stringify(sublist)),
+                    options: {debug} // set debug to true when you want the scraper to log information for each link
                 }
-            } else {
-                console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
-                if(debug) {
-                    await LoggingController.CreateLog(scraperEntry.link, 'error', message.error);
+            });
+
+            worker.on('message', async (messages) => {
+                for (const message of messages) {
+                    if (message.invalid) {
+                        if (debug)
+                            console.log(`Scraper ${message.entry.Scraper.name} invalid entry for ${message.link}`);
+
+                        await models.Item.update({invalid: true}, {where: {link: message.link}});
+                        await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry');
+                    } else if (message.success) {
+                        // you can debug the result here if needed
+                        if (debug) {
+                            await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`);
+                        }
+                    } else {
+                        console.error(`Error running scraper for ${message.link}:`, message.error);
+                        if (debug) {
+                            await LoggingController.CreateLog(message.link, 'error', message.error);
+                        }
+                    }
                 }
-            }
-        });
+            });
 
-        worker.on('error', (error) => {
-            console.error(`Worker error for ${scraperEntry.Scraper.name}:`, error);
-        });
+            worker.on('error', (error) => {
+                console.error(`Worker error: `, error);
+            });
 
-        worker.on('exit', (code) => {
-            if (code !== 0) {
-                console.error(`Worker for ${scraperEntry.Scraper.name} stopped with exit code ${code}`);
-            }
+            worker.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error(`Worker stopped with exit code ${code}`);
+                }
+            });
         });
     }
 }
