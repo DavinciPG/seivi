@@ -27,7 +27,7 @@ class ScrapeDataController extends BaseController {
                 order: [['scraped_at', 'DESC']]
             });
 
-            if(existingData && _.isEqual(JSON.parse(existingData.dataValues.data), JSON.parse(json_data)))
+            if(existingData && _.isEqual(JSON.parse(existingData.dataValues.data), json_data))
                 return { success: false, type: 'EQUAL' };
 
             const itemExists = await models.Item.findOne({
@@ -39,7 +39,7 @@ class ScrapeDataController extends BaseController {
 
             await models.ScrapedData.create({
                 link: link,
-                data: JSON.parse(json_data)
+                data: json_data
             });
 
             return { success: true, type: 'SUCCESS' };

@@ -49,7 +49,7 @@ async function run() {
         }
 
         if(!result.hasOwnProperty('error')) {
-            const inserted_result = await ScrapeDataController.InsertScrapeData(workerData.entry.link, JSON.stringify(result));
+            const inserted_result = await ScrapeDataController.InsertScrapeData(workerData.entry.link, result);
             if(!inserted_result.success && inserted_result.type === 'INVALID') {
                 // @DavinciPG - setting this as invalid since it's missing item property somehow
                 parentPort.postMessage({ invalid: true, data: { entry: workerData.entry } });
