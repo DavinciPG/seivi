@@ -83,20 +83,28 @@ class ItemController extends BaseController {
     }
     async CreateItem(req, res) {
         this.handleRequest(req, res, async () => {
-            const { link, scraperType, selected_parameters } = req.body;
+            const { link, selected_parameters } = req.body;
 
-            if(!link || !scraperType || !selected_parameters) {
-                return res.status(400).json({ error: 'Link, scraperType and selected_parameters are required' });
+            if(!link || !selected_parameters) {
+                return res.status(400).json({ error: 'Link and selected_parameters are required' });
             }
 
             const scraperList = await ScraperController.GetScrapers();
-            const scraper = scraperList[scraperType];
-            if(!scraper) {
-                return res.status(400).json({ error: 'Invalid scraperType' });
+            let scraperType = null;
+            for (const [type, scraper] of Object.entries(scraperList)) {
+                if (scraper.regex.test(link)) {
+                    scraperType = type;
+                    break;
+                }
             }
 
-            if(!scraper.regex.test(link)) {
-                return res.status(400).json({ error: 'Invalid link for scraperType' });
+            if (!scraperType) {
+                return res.status(400).json({ error: 'No matching scraper found for the provided link' });
+            }
+
+            const scraper = scraperList[scraperType];
+            if (!scraper) {
+                return res.status(400).json({ error: 'Invalid scraperType' });
             }
 
             let Item = await models.Item.findOne({
