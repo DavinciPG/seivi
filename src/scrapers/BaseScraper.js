@@ -38,11 +38,12 @@ class BaseScraper {
             if (response.status === 200) {
                 $ = await this.cheerio_data(response.data);
             } else {
-                const { statusCode, pageContent } = await BrowserController.GetPageContent(Entry.link);
-
+                const { link, loadTime, statusCode, pageContent } = await BrowserController.GetPageContent(Entry.link);
                 if (statusCode !== 200) {
                     return { error: 'Failed Loading Page' };
                 }
+
+                console.log(`${link} took ${loadTime}ms`);
 
                 $ = await this.cheerio_data(pageContent);
             }

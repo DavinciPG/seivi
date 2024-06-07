@@ -20,10 +20,15 @@ Object.keys(models).forEach(modelName => {
   }
 });
 
-sequelize.authenticate().then(() => {
-  console.log('Connection has been established successfully.');
-}).catch((error) => {
-  console.error('Unable to connect to the database:', error);
-});
+async function testConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection has been established successfully to the database.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+}
+
+testConnection();
 
 module.exports = { sequelize, models };

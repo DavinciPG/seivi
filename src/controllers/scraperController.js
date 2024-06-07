@@ -55,6 +55,8 @@ class ScraperController {
 
     async runAllScrapers() {
         try {
+            await BrowserController.InitializeBrowser();
+
             const Items = await models.Item.findAll({
                 where: {
                     invalid: false
@@ -66,9 +68,15 @@ class ScraperController {
                 }]
             });
 
-            console.log('Restarting scraper');
+            console.log('Starting scraper');
+            const timeStart = new Date().getTime();
 
-            await BrowserController.InitializeBrowser();
+            /*const results = await Promise.all(Items.map(item => BrowserController.GetPageContent(item.dataValues.link)));
+            results.forEach((result, index) => {
+                const { link, status, html, loadTime } = result;
+
+                console.log(`${link} took ${loadTime}`);
+            });*/
 
             // Split the array into x lists
             function splitIntoSublists(array, numSublists) {
@@ -85,13 +93,14 @@ class ScraperController {
             try {
                 await Promise.all(workerPromises);
                 console.log(`Scraper finished with ${Items.length} entries`);
+                console.log(`Total time: ${new Date().getTime() - timeStart}ms`);
             } catch(error) {
                 console.error('Error in worker execution:', error);
             } finally {
                 await BrowserController.CloseBrowser();
             }
         } catch (error) {
-            console.error('Error getting scraper list:', error);
+            console.error('Error scraping data:', error);
         }
     }
 
