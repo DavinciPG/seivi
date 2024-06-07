@@ -31,7 +31,7 @@ class BrowserController {
             if (!this.browser) {
                 this.browser = await puppeteer.launch({
                     //executablePath: chromiumPath,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito']
                 });
             }
         } catch(error) {

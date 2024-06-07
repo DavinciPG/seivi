@@ -93,22 +93,18 @@ class ScraperController {
                 if(debug)
                     console.log(`Scraper ${scraperEntry.Scraper.name} invalid entry for ${scraperEntry.link}`);
 
-                models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
-                LoggingController.CreateLog(scraperEntry.link, 'invalid', 'Invalid entry');
+                await models.Item.update({ invalid: true }, { where: { link: scraperEntry.link } });
+                await LoggingController.CreateLog(scraperEntry.link, 'invalid', 'Invalid entry');
             } else if (message.success) {
                 // you can debug the result here if needed
                 if(debug) {
                     console.log(`Scraper ${scraperEntry.Scraper.name} completed successfully for ${scraperEntry.link}`);
-                    models.Logging.create({
-                        link: scraperEntry.link,
-                        type: 'success',
-                        message: `Scraper completed ${scraperEntry.Scraper.name} for entry: ${JSON.stringify(scraperEntry)}`
-                    });
+                    await LoggingController.CreateLog(scraperEntry.link, 'success', `Scraper completed ${scraperEntry.Scraper.name} for entry: ${JSON.stringify(scraperEntry)}`);
                 }
             } else {
                 console.error(`Error running scraper for ${scraperEntry.link}:`, message.error);
                 if(debug) {
-                    LoggingController.CreateLog(scraperEntry.link, 'error', message.error);
+                    await LoggingController.CreateLog(scraperEntry.link, 'error', message.error);
                 }
             }
         });

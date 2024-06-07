@@ -3,8 +3,6 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-const path = require('path');
-
 // scraper
 const ScraperController = require('./controllers/ScraperController');
 
@@ -25,7 +23,7 @@ app.use(sessionHandler);
 
 // run the scraper alongside the server
 ScraperController.runAllScrapers();
-setInterval(ScraperController.runAllScrapers, 1000 * 60 * 5);
+setInterval(ScraperController.runAllScrapers, 1000 * 60 * 30);
 
 // Handle Routes
 app.use('/api', UserRouter);
