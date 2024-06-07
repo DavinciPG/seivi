@@ -71,13 +71,6 @@ class ScraperController {
             console.log('Starting scraper');
             const timeStart = new Date().getTime();
 
-            /*const results = await Promise.all(Items.map(item => BrowserController.GetPageContent(item.dataValues.link)));
-            results.forEach((result, index) => {
-                const { link, status, html, loadTime } = result;
-
-                console.log(`${link} took ${loadTime}`);
-            });*/
-
             // Split the array into x lists
             function splitIntoSublists(array, numSublists) {
                 const sublists = Array.from({ length: numSublists }, () => []);
@@ -88,7 +81,7 @@ class ScraperController {
             }
 
             const sublists = splitIntoSublists(Items, 6);
-            const workerPromises = sublists.map((list) => this.runScraperWorker(list, true));
+            const workerPromises = sublists.map((list) => this.runScraperWorker(list, false));
 
             try {
                 await Promise.all(workerPromises);
