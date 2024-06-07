@@ -16,20 +16,10 @@ class BaseScraper {
             }
         }
     }
-    
-    async data(url, options = null) {
-        try{    
-            const { data, status } = await this.fetch_axios(url, options);
-            return { data: cheerio.load(data), status };
-        } catch(error) {
-            throw new Error(error.message);
-        }
-    }
 
-    async data_puppeteer(url, headers = null) {
+    async cheerio_data(html) {
         try {
-            const data = BrowserController.GetPageContent(url, headers);
-            return cheerio.load(data);
+            return await cheerio.load(html);
         } catch(error) {
             throw new Error(error.message);
         }
