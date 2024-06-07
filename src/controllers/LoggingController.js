@@ -8,13 +8,14 @@ class LoggingController extends BaseController {
         this.CreateLog = this.CreateLog.bind(this);
     }
 
-    async CreateLog(link, type, message) {
+    async CreateLog(link, type, message, options = {}) {
+        const { transaction } = options;
         try {
             await models.Logging.create({
                 link,
                 type,
                 message
-            });
+            }, { transaction });
         } catch (error) {
             console.error('Error creating log:', error);
         }

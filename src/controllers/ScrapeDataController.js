@@ -18,20 +18,23 @@ class ScrapeDataController extends BaseController {
      * @param {JSON} json_data - The JSON data from the scrape
      * @returns {JSON} - Success parameter boolean, TYPE what failed
      */
-    async InsertScrapeData(link, json_data) {
+    async InsertScrapeData(link, json_data, options = {}) {
+        const { transaction } = options;
         try {
             const existingData = await models.ScrapedData.findOne({
                 where: {
                     link: link
                 },
-                order: [['scraped_at', 'DESC']]
+                order: [['scraped_at', 'DESC']],
+                transaction
             });
 
             if(existingData && _.isEqual(JSON.parse(existingData.dataValues.data), json_data))
                 return { success: false, type: 'EQUAL' };
 
             const itemExists = await models.Item.findOne({
-                where: { link: link }
+                where: { link: link },
+                transaction
             });
 
             if(!itemExists)
@@ -40,7 +43,7 @@ class ScrapeDataController extends BaseController {
             await models.ScrapedData.create({
                 link: link,
                 data: json_data
-            });
+            }, { transaction });
 
             return { success: true, type: 'SUCCESS' };
         } catch (error) {

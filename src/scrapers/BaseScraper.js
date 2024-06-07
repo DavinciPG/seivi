@@ -43,7 +43,8 @@ class BaseScraper {
                     return { error: 'Failed Loading Page' };
                 }
 
-                console.log(`${link} took ${loadTime}ms`);
+                // debug purposes
+                //console.log(`${link} took ${loadTime}ms`);
 
                 $ = await this.cheerio_data(pageContent);
             }

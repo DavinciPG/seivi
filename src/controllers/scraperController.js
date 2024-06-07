@@ -11,13 +11,13 @@ const BrowserController = require('./BrowserController');
 const { models } = require('../database');
 
 const ActiveScrapers = {
-    'klick': { 
-        id: 1, 
+    'klick': {
+        id: 1,
         scraper: KlickScraper,
         regex: /^(https:\/\/)?www\.klick\.ee\/.*$/
     },
-    'euronics': { 
-        id: 2, 
+    'euronics': {
+        id: 2,
         scraper: EuronicsScraper,
         regex: /^(https:\/\/)?www\.euronics\.ee\/.*$/
     },
@@ -30,7 +30,6 @@ const ActiveScrapers = {
 
 class ScraperController {
     constructor() {
-        this.runScraperWorker = this.runScraperWorker.bind(this);
         this.runAllScrapers = this.runAllScrapers.bind(this);
         this.GetScrapers = this.GetScrapers.bind(this);
     }
@@ -45,7 +44,7 @@ class ScraperController {
             if (!scraper) {
                 return { error: `Scraper '${ScraperName}' not found` };
             }
-            
+
             const result = await scraper.scraper.scrape(Entry, Options);
             return result;
         } catch (error) {
@@ -55,6 +54,8 @@ class ScraperController {
 
     async runAllScrapers() {
         try {
+            console.time('Total Scraping Time');
+
             await BrowserController.InitializeBrowser();
 
             const Items = await models.Item.findAll({
@@ -68,76 +69,85 @@ class ScraperController {
                 }]
             });
 
-            console.log('Starting scraper');
-            const timeStart = new Date().getTime();
+            const totalEntries = Items.length;
+            console.log(`Total entries to process: ${totalEntries}`);
 
-            // Split the array into x lists
-            function splitIntoSublists(array, numSublists) {
-                const sublists = Array.from({ length: numSublists }, () => []);
-                array.forEach((item, index) => {
-                    sublists[index % numSublists].push(item);
-                });
-                return sublists;
-            }
+            const itemsGroupedByScraper = Items.reduce((acc, item) => {
+                const scraperName = Object.keys(ActiveScrapers).find(key => ActiveScrapers[key].id === item.scraper_id);
+                if (!acc[scraperName]) {
+                    acc[scraperName] = [];
+                }
+                acc[scraperName].push(item);
+                return acc;
+            }, {});
 
-            const sublists = splitIntoSublists(Items, 6);
-            const workerPromises = sublists.map((list) => this.runScraperWorker(list, false));
+            await this.processScraperBatches(itemsGroupedByScraper);
 
-            try {
-                await Promise.all(workerPromises);
-                console.log(`Scraper finished with ${Items.length} entries`);
-                console.log(`Total time: ${new Date().getTime() - timeStart}ms`);
-            } catch(error) {
-                console.error('Error in worker execution:', error);
-            } finally {
-                await BrowserController.CloseBrowser();
-            }
+            console.timeEnd('Total Scraping Time');
+            console.log(`Checked ${totalEntries} entries.`);
         } catch (error) {
-            console.error('Error scraping data:', error);
+            console.error(`Error in runAllScrapers: ${error.message}`);
         }
     }
 
-    runScraperWorker(sublist, debug = false) {
-        return new Promise((resolve, reject) => {
-            const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
-                workerData: {
-                    entries: JSON.parse(JSON.stringify(sublist)),
-                    options: {debug} // set debug to true when you want the scraper to log information for each link
-                }
-            });
-
-            worker.on('message', async (messages) => {
-                for (const message of messages) {
-                    if (message.invalid) {
-                        if (debug)
-                            console.log(`Scraper ${message.entry.Scraper.name} invalid entry for ${message.link}`);
-
-                        await models.Item.update({invalid: true}, {where: {link: message.link}});
-                        await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry');
-                    } else if (message.success) {
-                        // you can debug the result here if needed
-                        if (debug) {
-                            await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`);
-                        }
-                    } else {
-                        console.error(`Error running scraper for ${message.link}:`, message.error);
-                        if (debug) {
-                            await LoggingController.CreateLog(message.link, 'error', message.error);
-                        }
+    async processScraperBatches(itemsGroupedByScraper) {
+        const promises = Object.keys(itemsGroupedByScraper).map(async (scraperName) => {
+            const sublist = itemsGroupedByScraper[scraperName];
+            const chunkSize = Math.ceil(sublist.length / 4);
+            for (let i = 0; i < sublist.length; i += chunkSize) {
+                const chunk = sublist.slice(i, i + chunkSize);
+                const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
+                    workerData: {
+                        entries: JSON.parse(JSON.stringify(chunk)),
+                        options: { debug: false }
                     }
-                }
-            });
+                });
 
-            worker.on('error', (error) => {
-                console.error(`Worker error: `, error);
-            });
+                worker.on('message', async (messages) => {
+                    await this.handleWorkerMessages(messages);
+                });
 
-            worker.on('exit', (code) => {
-                if (code !== 0) {
-                    console.error(`Worker stopped with exit code ${code}`);
-                }
-            });
+                worker.on('error', (error) => {
+                    console.error(`Worker error: `, error);
+                });
+
+                worker.on('exit', (code) => {
+                    if (code !== 0) {
+                        console.error(`Worker stopped with exit code ${code}`);
+                    }
+                });
+            }
         });
+
+        await Promise.all(promises);
+    }
+
+    async handleWorkerMessages(messages) {
+        for (const message of messages) {
+            const transaction = await models.sequelize.transaction();
+            try {
+                if (message.invalid) {
+                    console.log(`Scraper ${message.entry.Scraper.name} invalid entry for ${message.link}`);
+
+                    await models.Item.update({invalid: true}, {
+                        where: {
+                            link: message.link
+                        },
+                        transaction
+                    });
+
+                    await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry', { transaction });
+                } else if (message.success) {
+                    await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
+                } else {
+                    console.error(`Error running scraper for ${message.link}:`, message.error);
+                    await LoggingController.CreateLog(message.link, 'error', message.error, { transaction });
+                }
+                await transaction.commit();
+            } catch(error) {
+                await transaction.rollback();
+            }
+        }
     }
 }
 

@@ -10,7 +10,7 @@ const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, proces
 
 const models = {};
 fs.readdirSync(__dirname + '/models').forEach(file => {
-  const model = require(path.join(__dirname, 'models', file))(sequelize, Sequelize.DataTypes);
+  const model = require(path.join(__dirname, 'models', file))(sequelize);
   models[model.name] = model;
 });
 
@@ -20,15 +20,7 @@ Object.keys(models).forEach(modelName => {
   }
 });
 
-async function testConnection() {
-  try {
-    await sequelize.authenticate();
-    console.log('Connection has been established successfully to the database.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
-}
-
-testConnection();
+models.sequelize = sequelize;
+models.Sequelize = Sequelize;
 
 module.exports = { sequelize, models };
