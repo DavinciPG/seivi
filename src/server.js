@@ -15,6 +15,9 @@ const sessionHandler = require('./middleware/session');
 const UserRouter = require('./routes/UserRouter');
 const ScrapeRouter = require('./routes/ScraperRouter');
 
+// trust the first proxy
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(rateLimiter);
 app.use(corsHandler);

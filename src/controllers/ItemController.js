@@ -24,9 +24,8 @@ class ItemController extends BaseController {
                 }]
             });
 
-            if(UserSettings.length === 0) {
+            if(UserSettings.length === 0)
                 return res.json([]);
-            }
 
             const filteredUserSettings = UserSettings.map(setting => {
                 const { user_id, item_id, ...rest } = setting.get({ plain: true });
@@ -107,6 +106,24 @@ class ItemController extends BaseController {
                 return res.status(400).json({ error: 'Invalid scraperType' });
             }
 
+            const ScraperModel = await models.Scraper.findOne({
+                where: {
+                    name: scraperType
+                },
+                attributes: ['supported_parameters']
+            });
+
+            if (!ScraperModel) {
+                return res.status(400).json({ error: 'Scraper not found in database' });
+            }
+
+            const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
+            for (const param of Object.keys(selected_parameters)) {
+                if (!SupportedParameters[param]) {
+                    return res.status(400).json({ error: `Parameter '${param}' is not supported by the selected scraper` });
+                }
+            }
+
             let Item = await models.Item.findOne({
                 where: {
                     link
@@ -148,14 +165,32 @@ class ItemController extends BaseController {
                 return res.status(400).json({ error: 'Link and selected_parameters are required' });
             }
 
-            const Item = await models.Item.findOne({
+            const ItemModel = await models.Item.findOne({
                 where: {
                     link
                 }
             });
 
-            if(!Item) {
+            if(!ItemModel) {
                 return res.status(404).json({ error: 'Item not found' });
+            }
+
+            const ScraperModel = await models.Scraper.findOne({
+                where: {
+                    name: scraperType
+                },
+                attributes: ['supported_parameters']
+            });
+
+            if (!ScraperModel) {
+                return res.status(400).json({ error: 'Scraper not found in database' });
+            }
+
+            const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
+            for (const param of Object.keys(selected_parameters)) {
+                if (!SupportedParameters[param]) {
+                    return res.status(400).json({ error: `Parameter '${param}' is not supported by the selected scraper` });
+                }
             }
 
             const UserSetting = await models.UserScraperSetting.findOne({

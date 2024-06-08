@@ -1,5 +1,6 @@
 const _ = require('lodash');
 
+const { Op, QueryTypes } = require('sequelize');
 const { models } = require('../database');
 const BaseController = require('./BaseController');
 
@@ -53,10 +54,44 @@ class ScrapeDataController extends BaseController {
     }
     async GetScrapeDataForUser(req, res) {
         this.handleRequest(req, res, async () => {
+            const UserSettings = await models.UserScraperSetting.findAll({
+                attributes: ['user_id', 'item_id', 'selected_parameters'],
+                where: {
+                    user_id: req.session.user.id
+                },
+                include: [{
+                    model: models.Item,
+                    attributes: ['link']
+                }]
+            });
+
+            if(UserSettings.length === 0)
+                return res.json([]);
+
+            const links = [];
+            for(const Setting of UserSettings) {
+                links.push(Setting.dataValues.Item.link);
+            }
+
             // finish this
-            const data = await models.ScrapedData.findAll({
-                attributes: ['link', 'data', 'scraped_at'],
-                order: [['link'], ['scraped_at', 'DESC']]
+            const query = `
+            SELECT s1.*
+            FROM ScrapedData s1
+            WHERE s1.id IN (
+                SELECT id
+                FROM (
+                    SELECT id, ROW_NUMBER() OVER (PARTITION BY link ORDER BY scraped_at DESC) as row_num
+                    FROM ScrapedData
+                    WHERE link IN (:links)
+                ) s2
+                WHERE s2.row_num <= 2
+            )
+            ORDER BY s1.link, s1.scraped_at DESC
+        `;
+
+            const data = await models.sequelize.query(query, {
+                replacements: { links },
+                type: QueryTypes.SELECT
             });
 
             res.json(data);
