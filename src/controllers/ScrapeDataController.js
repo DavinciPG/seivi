@@ -54,7 +54,7 @@ class ScrapeDataController extends BaseController {
                 if (Object.keys(differences).length > 0) {
                     const message = `Data for ${link} has changed.`;
 
-                    // @DavinciPG - @todo: link_to is actually our server link to view the data.
+                    // @DavinciPG - @todo: link_to is actually our webpage link to view the data.
                     // @DavinciPG - Difference: ${JSON.stringify(differences)}
 
                     await models.Notification.create({

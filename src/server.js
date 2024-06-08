@@ -14,6 +14,7 @@ const sessionHandler = require('./middleware/session');
 // Import routes
 const UserRouter = require('./routes/UserRouter');
 const ScrapeRouter = require('./routes/ScraperRouter');
+const NotificationRouter = require('./routes/NotificationRouter');
 
 // trust the first proxy
 app.set('trust proxy', 1);
@@ -31,6 +32,7 @@ setInterval(ScraperController.runAllScrapers, 1000 * 60 * 30);
 // Handle Routes
 app.use('/api', UserRouter);
 app.use('/api', ScrapeRouter);
+app.use('/api', NotificationRouter);
 
 // Start server
 app.listen(port, () => {
