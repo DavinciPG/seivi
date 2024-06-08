@@ -20,7 +20,7 @@ module.exports = (sequelize) => {
       allowNull: false,
       references: {
         model: 'Scrapers',
-        key: 'ID'
+        key: 'id'
       }
     },
     invalid: {

@@ -46,12 +46,44 @@ class ScrapeDataController extends BaseController {
                 data: json_data
             }, { transaction });
 
+            // @DavinciPG - @todo: here we check if data exists. We can add a notification here that data changed!
+            if(existingData) {
+                const existingDataParsed = JSON.parse(existingData.dataValues.data);
+                const differences = this.findDifferences(existingDataParsed, json_data);
+
+                if (Object.keys(differences).length > 0) {
+                    const message = `Data for ${link} has changed.`;
+
+                    // @DavinciPG - @todo: link_to is actually our server link to view the data.
+                    // @DavinciPG - Difference: ${JSON.stringify(differences)}
+
+                    await models.Notification.create({
+                        time: new Date(),
+                        archived: false,
+                        seen: false,
+                        type: 'data_change',
+                        message: message,
+                        link_to: link
+                    }, { transaction });
+                }
+            }
+
             return { success: true, type: 'SUCCESS' };
         } catch (error) {
             console.error('Error inserting scrape data:', error);
             return { success: false, type: 'ERROR' };
         }
     }
+
+    findDifferences(oldData, newData) {
+        return _.reduce(newData, (result, value, key) => {
+            if (!_.isEqual(value, oldData[key])) {
+                result[key] = { old: oldData[key], new: value };
+            }
+            return result;
+        }, {});
+    }
+
     async GetScrapeDataForUser(req, res) {
         this.handleRequest(req, res, async () => {
             const UserSettings = await models.UserScraperSetting.findAll({
@@ -73,21 +105,20 @@ class ScrapeDataController extends BaseController {
                 links.push(Setting.dataValues.Item.link);
             }
 
-            // finish this
             const query = `
-            SELECT s1.*
-            FROM ScrapedData s1
-            WHERE s1.id IN (
-                SELECT id
-                FROM (
-                    SELECT id, ROW_NUMBER() OVER (PARTITION BY link ORDER BY scraped_at DESC) as row_num
-                    FROM ScrapedData
-                    WHERE link IN (:links)
-                ) s2
-                WHERE s2.row_num <= 2
-            )
-            ORDER BY s1.link, s1.scraped_at DESC
-        `;
+                SELECT s1.*
+                FROM ScrapedData s1
+                WHERE s1.id IN (
+                    SELECT id
+                    FROM (
+                        SELECT id, ROW_NUMBER() OVER (PARTITION BY link ORDER BY scraped_at DESC) as row_num
+                        FROM ScrapedData
+                        WHERE link IN (:links)
+                    ) s2
+                    WHERE s2.row_num <= 2
+                )
+                ORDER BY s1.link, s1.scraped_at DESC
+            `;
 
             const data = await models.sequelize.query(query, {
                 replacements: { links },
