@@ -17,6 +17,7 @@ class ScrapeDataController extends BaseController {
      * Logs error details for debugging.
      * @param link - The item link
      * @param {JSON} json_data - The JSON data from the scrape
+     * @param {Array} options
      * @returns {JSON} - Success parameter boolean, TYPE what failed
      */
     async InsertScrapeData(link, json_data, options = {}) {
@@ -46,25 +47,42 @@ class ScrapeDataController extends BaseController {
                 data: json_data
             }, { transaction });
 
-            // @DavinciPG - @todo: here we check if data exists. We can add a notification here that data changed!
-            if(existingData) {
+            if (existingData) {
                 const existingDataParsed = JSON.parse(existingData.dataValues.data);
                 const differences = this.findDifferences(existingDataParsed, json_data);
 
                 if (Object.keys(differences).length > 0) {
-                    const message = `Data for ${link} has changed.`;
+                    const UserSettings = await models.UserScraperSetting.findAll({
+                        attributes: ['user_id', 'item_id', 'selected_parameters'],
+                        include: [{
+                            model: models.Item,
+                            attributes: ['link'],
+                            where: {
+                                link
+                            }
+                        }]
+                    });
 
-                    // @DavinciPG - @todo: link_to is actually our webpage link to view the data.
-                    // @DavinciPG - Difference: ${JSON.stringify(differences)}
+                    if (UserSettings.length === 0) {
+                        return { success: true, type: 'SUCCESS' };
+                    }
 
-                    await models.Notification.create({
-                        time: new Date(),
-                        archived: false,
-                        seen: false,
-                        type: 'data_change',
-                        message: message,
-                        link_to: link
-                    }, { transaction });
+                    for (const userSetting of UserSettings) {
+                        const relevantChanges = Object.keys(differences).filter(param => userSetting.dataValues.selected_parameters[param]);
+
+                        if (relevantChanges.length > 0) {
+                            const userMessage = `Data for ${link} has changed: ${JSON.stringify(differences)}`;
+                            await models.Notification.create({
+                                time: new Date(),
+                                archived: false,
+                                seen: false,
+                                type: 'data_change',
+                                message: userMessage,
+                                link_to: link,
+                                user_id: userSetting.dataValues.user_id
+                            }, { transaction });
+                        }
+                    }
                 }
             }
 

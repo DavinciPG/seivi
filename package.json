@@ -41,6 +41,11 @@
     "mysql2": "^3.10.0",
     "puppeteer": "^22.10.0",
     "puppeteer-cluster": "^0.24.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-adblocker": "^2.13.6",
+    "puppeteer-extra-plugin-anonymize-ua": "^2.4.6",
+    "puppeteer-extra-plugin-block-resources": "^2.4.3",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "sequelize": "^6.37.3"
   }
 }
