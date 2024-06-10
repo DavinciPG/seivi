@@ -83,6 +83,7 @@ class ScraperController {
 
             await this.processScraperBatches(itemsGroupedByScraper);
 
+            // @DavinciPG - @todo: why doesn't this function properly, gets called even though await
             console.timeEnd('Total Scraping Time');
             console.log(`Checked ${totalEntries} entries.`);
         } catch (error) {
@@ -143,6 +144,7 @@ class ScraperController {
                     console.error(`Error running scraper for ${message.link}:`, message.error);
                     await LoggingController.CreateLog(message.link, 'error', message.error, { transaction });
                 }
+
                 await transaction.commit();
             } catch(error) {
                 await transaction.rollback();

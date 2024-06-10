@@ -40,7 +40,7 @@ class ItemController extends BaseController {
             const { link } = req.body;
 
             if(!link) {
-                return res.status(400).json({ error: 'Link is required' });
+                return res.status(400).json({ success: false, error: 'Link is required' });
             }
 
             const Item = await models.Item.findOne({
@@ -50,7 +50,7 @@ class ItemController extends BaseController {
             });
 
             if(!Item) {
-                return res.status(404).json({ error: 'Item not found' });
+                return res.status(404).json({ success: false, error: 'Item not found' });
             }
 
             const UserSetting = await models.UserScraperSetting.findOne({
@@ -61,7 +61,7 @@ class ItemController extends BaseController {
             });
 
             if(!UserSetting) {
-                return res.status(404).json({ error: 'User setting not found' });
+                return res.status(404).json({ success: false, error: 'User setting not found' });
             }
 
             await UserSetting.destroy();
@@ -85,7 +85,7 @@ class ItemController extends BaseController {
             const { link, selected_parameters } = req.body;
 
             if(!link || !selected_parameters) {
-                return res.status(400).json({ error: 'Link and selected_parameters are required' });
+                return res.status(400).json({ success: false, error: 'Link and selected_parameters are required' });
             }
 
             const scraperList = await ScraperController.GetScrapers();
@@ -98,12 +98,12 @@ class ItemController extends BaseController {
             }
 
             if (!scraperType) {
-                return res.status(400).json({ error: 'No matching scraper found for the provided link' });
+                return res.status(400).json({ success: false, error: 'No matching scraper found for the provided link' });
             }
 
             const scraper = scraperList[scraperType];
             if (!scraper) {
-                return res.status(400).json({ error: 'Invalid scraperType' });
+                return res.status(400).json({ success: false, error: 'Invalid scraperType' });
             }
 
             const ScraperModel = await models.Scraper.findOne({
@@ -114,13 +114,13 @@ class ItemController extends BaseController {
             });
 
             if (!ScraperModel) {
-                return res.status(400).json({ error: 'Scraper not found in database' });
+                return res.status(400).json({ success: false, error: 'Scraper not found in database' });
             }
 
             const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
             for (const param of Object.keys(selected_parameters)) {
                 if (!SupportedParameters[param]) {
-                    return res.status(400).json({ error: `Parameter '${param}' is not supported by the selected scraper` });
+                    return res.status(400).json({ success: false, error: `Parameter '${param}' is not supported by the selected scraper` });
                 }
             }
 
@@ -145,7 +145,7 @@ class ItemController extends BaseController {
             });
 
             if(UserSetting) {
-                return res.status(400).json({ error: 'User setting already exists' });
+                return res.status(400).json({ success: false, error: 'User setting already exists' });
             }
 
             await models.UserScraperSetting.create({
@@ -162,7 +162,7 @@ class ItemController extends BaseController {
             const { link, selected_parameters } = req.body;
 
             if(!link || !selected_parameters) {
-                return res.status(400).json({ error: 'Link and selected_parameters are required' });
+                return res.status(400).json({ success: false, error: 'Link and selected_parameters are required' });
             }
 
             const ItemModel = await models.Item.findOne({
@@ -172,7 +172,7 @@ class ItemController extends BaseController {
             });
 
             if(!ItemModel) {
-                return res.status(404).json({ error: 'Item not found' });
+                return res.status(404).json({ success: false, error: 'Item not found' });
             }
 
             const ScraperModel = await models.Scraper.findOne({
@@ -183,13 +183,13 @@ class ItemController extends BaseController {
             });
 
             if (!ScraperModel) {
-                return res.status(400).json({ error: 'Scraper not found in database' });
+                return res.status(400).json({ success: false, error: 'Scraper not found in database' });
             }
 
             const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
             for (const param of Object.keys(selected_parameters)) {
                 if (!SupportedParameters[param]) {
-                    return res.status(400).json({ error: `Parameter '${param}' is not supported by the selected scraper` });
+                    return res.status(400).json({ success: false, error: `Parameter '${param}' is not supported by the selected scraper` });
                 }
             }
 
@@ -201,7 +201,7 @@ class ItemController extends BaseController {
             });
 
             if(!UserSetting) {
-                return res.status(404).json({ error: 'User setting not found' });
+                return res.status(404).json({ success: false, error: 'User setting not found' });
             }
 
             await UserSetting.update({

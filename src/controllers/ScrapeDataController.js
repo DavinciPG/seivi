@@ -151,7 +151,7 @@ class ScrapeDataController extends BaseController {
             const { link } = req.query;
 
             if (!link) {
-                return res.status(400).json({ error: 'Link parameter is required' });
+                return res.status(400).json({ success: false, error: 'Link parameter is required' });
             }
 
             const data = await models.ScrapedData.findAll({

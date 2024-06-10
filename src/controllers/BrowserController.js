@@ -93,21 +93,30 @@ class BrowserController {
             });
 
             await this.cluster.task(async ({ page, data: { url, resolve } }) => {
-                const start = Date.now();
+                try {
+                    const start = Date.now();
 
-                await page.setExtraHTTPHeaders(default_headers);
-                await page.setJavaScriptEnabled(false);
-                const response = await page.goto(url, { waitUntil: 'domcontentloaded' });
-                const statusCode = response.status();
-                const pageContent = await page.content();
+                    await page.setExtraHTTPHeaders(default_headers);
+                    await page.setJavaScriptEnabled(false);
 
-                const end = Date.now();
-                const loadTime = end - start;
+                    const response = await page.goto(url, {waitUntil: 'domcontentloaded'});
 
-                resolve({ link: url, statusCode, pageContent, loadTime });
+                    const statusCode = response.status();
+                    const pageContent = await page.content();
+
+                    const end = new Date.now();
+                    const loadTime = end - start;
+
+                    resolve({link: url, statusCode, pageContent, loadTime});
+                }
+                catch(error) {
+
+                } finally {
+                    await page.close();
+                }
             });
         } catch (error) {
-            throw new Error(error.message);
+            console.error('Error initializing browser:', error);
         }
     }
 
@@ -119,7 +128,7 @@ class BrowserController {
                 this.cluster = null;
             }
         } catch (error) {
-            throw new Error(error.message);
+            console.error('Error closing browser:', error);
         }
     }
 

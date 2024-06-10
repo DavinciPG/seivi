@@ -31,7 +31,7 @@ class NotificationController extends BaseController {
 
             const notification = await models.Notification.findByPk(id);
             if (!notification) {
-                return { success: false, message: 'Notification not found' };
+                return { success: false, error: 'Notification not found' };
             }
 
             await notification.update({
@@ -49,11 +49,11 @@ class NotificationController extends BaseController {
 
             const notification = await models.Notification.findByPk(id);
             if (!notification) {
-                return { success: false, message: 'Notification not found' };
+                return { success: false, error: 'Notification not found' };
             }
 
             if(notification.dataValues.user_id !== req.session.user.id) {
-                return {success: false, message: 'You do not own this notification'};
+                return {success: false, error: 'You do not own this notification'};
             }
 
             await notification.update({
@@ -70,11 +70,11 @@ class NotificationController extends BaseController {
 
             const notification = await models.Notification.findByPk(id);
             if (!notification) {
-                return { success: false, message: 'Notification not found' };
+                return { success: false, error: 'Notification not found' };
             }
 
             if(notification.dataValues.user_id !== req.session.user.id) {
-                return {success: false, message: 'You do not own this notification'};
+                return { success: false, error: 'You do not own this notification' };
             }
 
             await notification.destroy();

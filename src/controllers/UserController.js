@@ -21,19 +21,19 @@ class UserController extends BaseController {
             const { username, email, password} = req.body;
 
             if (!username || !email || !password) {
-                return res.status(400).json({ error: 'Username, email, and password are required' });
+                return res.status(400).json({ success: false, error: 'Username, email, and password are required' });
             }
 
             if (username.length < 3 || username.length > 15) {
-                return res.status(400).json({ error: 'Username must be between 3 and 15 characters' });
+                return res.status(400).json({ success: false, error: 'Username must be between 3 and 15 characters' });
             }
 
             if (!emailRegex.test(email)) {
-                return res.status(400).json({ error: 'Invalid email format' });
+                return res.status(400).json({ success: false, error: 'Invalid email format' });
             }
 
             if (password.length < 8 || password.length > 65) {
-                return res.status(400).json({ error: 'Password must be at least 8 characters long and no longer than 65 characters' });
+                return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long and no longer than 65 characters' });
             }
 
             const existingUser = await models.User.findAll({
@@ -46,7 +46,7 @@ class UserController extends BaseController {
             });
 
             if(existingUser.length > 0) {
-                return res.status(400).json({ error: 'Email OR username already in use' });
+                return res.status(400).json({ success: false, error: 'Email OR username already in use' });
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -62,7 +62,7 @@ class UserController extends BaseController {
                 email: user.email
             }
 
-            return res.status(201).json({ message: 'User created and logged in to session' });
+            return res.status(201).json({ success: true, message: 'User created and logged in to session' });
         });
     }
     async createSession(req, res) {
@@ -70,7 +70,7 @@ class UserController extends BaseController {
             const { identifier, password } = req.body;
 
             if (!identifier || !password) {
-                return res.status(400).json({ error: 'Username/email and password are required' });
+                return res.status(400).json({ success: false, error: 'Username/email and password are required' });
             }
 
             const user = await models.User.findOne({
@@ -83,12 +83,12 @@ class UserController extends BaseController {
             });
 
             if (!user) {
-                return res.status(401).json({ error: 'Invalid username/email or password' });
+                return res.status(401).json({ success: false, error: 'Invalid username/email or password' });
             }
 
             const isPasswordValid = await bcrypt.compare(password, user.password);
             if (!isPasswordValid) {
-                return res.status(401).json({ error: 'Invalid username/email or password' });
+                return res.status(401).json({ success: false, error: 'Invalid username/email or password' });
             }
 
             req.session.user = {
@@ -97,17 +97,17 @@ class UserController extends BaseController {
                 email: user.email
             }
 
-            return res.status(200).json({ message: 'Registered session' });
+            return res.status(200).json({ success: true, message: 'Registered session' });
         });
     }
     async deleteSession(req, res) {
         this.handleRequest(req, res, async () => {
             req.session.destroy(err => {
                 if (err) {
-                    return res.status(500).json({ message: 'Logout failed' });
+                    return res.status(500).json({ success: false, message: 'Logout failed' });
                 }
 
-                return res.status(200).json({ message: 'Logout successful' });
+                return res.status(200).json({ success: true, message: 'Logout successful' });
             });
         });
     }
