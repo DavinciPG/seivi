@@ -45,14 +45,6 @@ async function processEntry(entry, options, transaction) {
             return { invalid: true, link: entry.link, entry: entry };
         }
 
-        if (!result.hasOwnProperty('error')) {
-            const insertedResult = await ScrapeDataController.InsertScrapeData(entry.link, result, { transaction });
-            if (!insertedResult.success && insertedResult.type === 'INVALID') {
-                console.log(`Scraper hit invalid: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
-                return { invalid: true, link: entry.link, entry: entry };
-            }
-        }
-
         if (options.debug) {
             console.log(`Scraper completed: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
         }
@@ -81,6 +73,7 @@ async function run() {
             const result = await processEntry(entry, workerData.options, transaction);
             results.push(result);
         }
+
         await transaction.commit();
     } catch(error) {
         await transaction.rollback();

@@ -17,7 +17,7 @@ class ScrapeDataController extends BaseController {
      * Logs error details for debugging.
      * @param link - The item link
      * @param {JSON} json_data - The JSON data from the scrape
-     * @param {Array} options
+     * @param {} options
      * @returns {JSON} - Success parameter boolean, TYPE what failed
      */
     async InsertScrapeData(link, json_data, options = {}) {

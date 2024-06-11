@@ -33,21 +33,30 @@ const default_headers = {
 class BrowserController {
     constructor() {
         this.cluster = null;
-
-        this.InitializeBrowser = this.InitializeBrowser.bind(this);
-        this.CloseBrowser = this.CloseBrowser.bind(this);
-        this.GetPageContent = this.GetPageContent.bind(this);
+        this.initializing = null;
     }
 
     async InitializeBrowser() {
+        if (this.cluster) {
+            return this.cluster;
+        }
+
+        if (!this.initializing) {
+            this.initializing = this._initializeCluster();
+        }
+
+        return this.initializing;
+    }
+
+    async _initializeCluster() {
         try {
             this.cluster = await Cluster.launch({
-                concurrency: Cluster.CONCURRENCY_PAGE,
-                maxConcurrency: 100,
+                concurrency: Cluster.CONCURRENCY_CONTEXT,
+                maxConcurrency: 10,
                 puppeteer,
                 puppeteerOptions: {
                     headless: true,
-                    executablePath: chromiumPath,
+                    // executablePath: chromiumPath,
                     args: [
                         '--incognito',
                         '--no-sandbox',
@@ -84,7 +93,8 @@ class BrowserController {
                         height: 600
                     }
                 },
-                monitor: true,
+                monitor: false,
+                timeout: 1000,
                 retryLimit: 2
             });
 
@@ -92,31 +102,36 @@ class BrowserController {
                 console.error(`Error crawling ${data}: ${err.message}`);
             });
 
-            await this.cluster.task(async ({ page, data: { url, resolve } }) => {
+            this.cluster.task(async ({ page, data: { url, resolve, reject } }) => {
                 try {
                     const start = Date.now();
 
                     await page.setExtraHTTPHeaders(default_headers);
                     await page.setJavaScriptEnabled(false);
 
-                    const response = await page.goto(url, {waitUntil: 'domcontentloaded'});
+                    const response = await page.goto(url, { waitUntil: 'domcontentloaded' });
 
                     const statusCode = response.status();
                     const pageContent = await page.content();
 
-                    const end = new Date.now();
+                    const end = Date.now();
                     const loadTime = end - start;
 
-                    resolve({link: url, statusCode, pageContent, loadTime});
-                }
-                catch(error) {
-
-                } finally {
-                    await page.close();
+                    resolve({ link: url, statusCode, pageContent, loadTime });
+                } catch (error) {
+                    console.error('Error in cluster task:', error);
+                    reject(error);
                 }
             });
+
+            console.log('Browser cluster initialized successfully.');
+            return this.cluster;
         } catch (error) {
-            console.error('Error initializing browser:', error);
+            console.error('Error initializing browser cluster:', error);
+            this.cluster = null;
+            throw error;
+        } finally {
+            this.initializing = null;
         }
     }
 
@@ -126,20 +141,25 @@ class BrowserController {
                 await this.cluster.idle();
                 await this.cluster.close();
                 this.cluster = null;
+                console.log('Browser cluster closed.');
             }
         } catch (error) {
-            console.error('Error closing browser:', error);
+            console.error('Error closing browser cluster:', error);
         }
     }
 
     async GetPageContent(url, headers = default_headers) {
-        if (!this.cluster)
-            await this.InitializeBrowser();
-
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
-                this.cluster.queue({ url, resolve });
+                await this.InitializeBrowser();
+
+                if (this.cluster) {
+                    this.cluster.queue({ url, resolve, reject });
+                } else {
+                    reject(new Error('Cluster is not initialized'));
+                }
             } catch (error) {
+                console.error('Error in GetPageContent:', error);
                 reject(new Error(error.message));
             }
         });
