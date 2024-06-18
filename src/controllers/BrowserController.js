@@ -31,82 +31,77 @@ const default_headers = {
 }
 
 class BrowserController {
-    constructor() {
+    constructor(concurrency = 20, defaultHeaders = default_headers) {
+        this.concurrency = concurrency;
+        this.defaultHeaders = defaultHeaders;
         this.cluster = null;
-        this.initializing = null;
     }
 
-    async InitializeBrowser() {
-        if (this.cluster) {
-            return this.cluster;
-        }
+    async initializeCluster() {
+        this.cluster = await Cluster.launch({
+            puppeteer,
+            concurrency: Cluster.CONCURRENCY_PAGE,
+            maxConcurrency: this.concurrency,
+            monitor: false,
+            puppeteerOptions: {
+                headless: true,
+                executablePath: chromiumPath,
+                args: [
+                    '--incognito',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-application-cache',
+                    '--disk-cache-dir=/dev/null',
+                    '--disable-dev-shm-usage',
+                    '--disable-software-rasterizer',
+                    '--disable-gl-drawing-for-tests',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process',
+                    '--disable-default-apps',
+                    '--disable-extensions',
+                    '--disable-sync',
+                    '--disable-translate',
+                    '--disable-blink-features=AutomationControlled',
+                    '--mute-audio',
+                    '--disable-background-networking',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding',
+                    '--disable-breakpad',
+                    '--disable-component-extensions-with-background-pages',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-renderer-backgrounding',
+                    '--force-color-profile=srgb',
+                    '--window-size=800,600'
+                ],
+                defaultViewport: {
+                    width: 800,
+                    height: 600
+                }
+            },
+        });
 
-        if (!this.initializing) {
-            this.initializing = this._initializeCluster();
-        }
-
-        return this.initializing;
+        this.cluster.on('taskerror', (err, data) => {
+            console.error(`Error crawling ${data}: ${err.message}`);
+        });
     }
 
-    async _initializeCluster() {
-        try {
-            this.cluster = await Cluster.launch({
-                concurrency: Cluster.CONCURRENCY_CONTEXT,
-                maxConcurrency: 10,
-                puppeteer,
-                puppeteerOptions: {
-                    headless: true,
-                    // executablePath: chromiumPath,
-                    args: [
-                        '--incognito',
-                        '--no-sandbox',
-                        '--disable-setuid-sandbox',
-                        '--disable-application-cache',
-                        '--disk-cache-dir=/dev/null',
-                        '--disable-dev-shm-usage',
-                        '--disable-software-rasterizer',
-                        '--disable-gl-drawing-for-tests',
-                        '--disable-accelerated-2d-canvas',
-                        '--disable-gpu',
-                        '--no-first-run',
-                        '--no-zygote',
-                        '--single-process',
-                        '--disable-default-apps',
-                        '--disable-extensions',
-                        '--disable-sync',
-                        '--disable-translate',
-                        '--disable-blink-features=AutomationControlled',
-                        '--mute-audio',
-                        '--disable-background-networking',
-                        '--disable-background-timer-throttling',
-                        '--disable-backgrounding-occluded-windows',
-                        '--disable-renderer-backgrounding',
-                        '--disable-breakpad',
-                        '--disable-component-extensions-with-background-pages',
-                        '--disable-ipc-flooding-protection',
-                        '--disable-renderer-backgrounding',
-                        '--force-color-profile=srgb',
-                        '--window-size=800,600'
-                    ],
-                    defaultViewport: {
-                        width: 800,
-                        height: 600
-                    }
-                },
-                monitor: false,
-                timeout: 1000,
-                retryLimit: 2
-            });
+    async closeCluster() {
+        await this.cluster.idle();
+        await this.cluster.close();
+        this.cluster = null;
+    }
 
-            this.cluster.on('taskerror', (err, data) => {
-                console.error(`Error crawling ${data}: ${err.message}`);
-            });
-
-            this.cluster.task(async ({ page, data: { url, resolve, reject } }) => {
+    async scrape(url) {
+        return new Promise((resolve, reject) => {
+            this.cluster.queue(async ({ page }) => {
                 try {
                     const start = Date.now();
 
-                    await page.setExtraHTTPHeaders(default_headers);
+                    await page.setExtraHTTPHeaders(this.defaultHeaders);
                     await page.setJavaScriptEnabled(false);
 
                     const response = await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -119,59 +114,11 @@ class BrowserController {
 
                     resolve({ link: url, statusCode, pageContent, loadTime });
                 } catch (error) {
-                    console.error('Error in cluster task:', error);
                     reject(error);
                 }
             });
-
-            console.log('Browser cluster initialized successfully.');
-            return this.cluster;
-        } catch (error) {
-            console.error('Error initializing browser cluster:', error);
-            this.cluster = null;
-            throw error;
-        } finally {
-            this.initializing = null;
-        }
-    }
-
-    async CloseBrowser() {
-        try {
-            if (this.cluster) {
-                await this.cluster.idle();
-                await this.cluster.close();
-                this.cluster = null;
-                console.log('Browser cluster closed.');
-            }
-        } catch (error) {
-            console.error('Error closing browser cluster:', error);
-        }
-    }
-
-    async GetPageContent(url, headers = default_headers) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await this.InitializeBrowser();
-
-                if (this.cluster) {
-                    this.cluster.queue({ url, resolve, reject });
-                } else {
-                    reject(new Error('Cluster is not initialized'));
-                }
-            } catch (error) {
-                console.error('Error in GetPageContent:', error);
-                reject(new Error(error.message));
-            }
         });
-    }
-
-    async GetData(content) {
-        try {
-            return cheerio.load(content);
-        } catch (error) {
-            throw new Error(error.message);
-        }
     }
 }
 
-module.exports = new BrowserController();
+module.exports = BrowserController;

@@ -3,6 +3,7 @@ const { parentPort, workerData } = require('worker_threads');
 const ScraperController = require('../controllers/ScraperController');
 const ScrapeDataController = require('../controllers/ScrapeDataController');
 const LoggingController = require('../controllers/LoggingController');
+const BrowserController = require('../controllers/BrowserController');
 
 const { models } = require('../database');
 
@@ -29,24 +30,29 @@ function logError(error) {
  * Processes a single entry by running the scraper and logging the result.
  * @param {Object} entry - The entry to process.
  * @param {Object} options - The options for processing.
+ * @param {Class} browserController - browserContoller class
  * @returns {Object} - The result of processing the entry.
  */
-async function processEntry(entry, options, transaction) {
+async function processEntry(entry, options, browserController, transaction) {
     try {
         if (options.debug) {
-            console.log(`Starting scraper: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
             await LoggingController.CreateLog(entry.link, 'info', `Starting scraper: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`, { transaction });
         }
 
-        const result = await ScraperController.RunScraper(entry.Scraper.name, entry, options);
+        const result = await ScraperController.RunScraper(entry.Scraper.name, entry, browserController, options);
 
         if (entry.invalid) {
             console.log(`Invalid entry: ${JSON.stringify(entry)}`);
             return { invalid: true, link: entry.link, entry: entry };
         }
 
-        if (options.debug) {
-            console.log(`Scraper completed: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+        if(!result.hasOwnProperty('error')) {
+            const inserted_result = await ScrapeDataController.InsertScrapeData(entry.link, result);
+            if(!inserted_result.success && inserted_result.type === 'INVALID') {
+                parentPort.postMessage({ invalid: true, data: { entry: entry } });
+                console.log(`Scraper hit invalid: ${entry.Scraper.name} for entry: ${JSON.stringify(entry)}`);
+                return;
+            }
         }
 
         return { success: true, result, link: entry.link, entry: entry };
@@ -68,9 +74,12 @@ async function run() {
     const results = [];
     const transaction = await models.sequelize.transaction();
 
+    const browserController = new BrowserController();
+    await browserController.initializeCluster();
+
     try {
         for (const entry of workerData.entries) {
-            const result = await processEntry(entry, workerData.options, transaction);
+            const result = await processEntry(entry, workerData.options, browserController, transaction);
             results.push(result);
         }
 
@@ -78,6 +87,8 @@ async function run() {
     } catch(error) {
         await transaction.rollback();
     }
+
+    await browserController.closeCluster();
 
     parentPort.postMessage(results);
     process.exit();

@@ -39,14 +39,14 @@ class ScraperController {
         return ActiveScrapers;
     }
 
-    async RunScraper(ScraperName, Entry, Options = { debug: false }) {
+    async RunScraper(ScraperName, Entry, browserController, Options) {
         try {
             const scraper = ActiveScrapers[ScraperName];
             if (!scraper) {
                 return { error: `Scraper '${ScraperName}' not found` };
             }
 
-            const result = await scraper.scraper.scrape(Entry, Options);
+            const result = await scraper.scraper.scrape(Entry, browserController, Options);
             return result;
         } catch (error) {
             return { error: error.message };
@@ -71,8 +71,6 @@ class ScraperController {
 
     async runAllScrapers() {
         try {
-            await BrowserController.InitializeBrowser();
-
             const Items = await models.Item.findAll({
                 where: {
                     invalid: false
@@ -88,13 +86,11 @@ class ScraperController {
             console.log(`Total entries to process: ${totalEntries}`);
 
             const shuffledItems = this.shuffleArray(Items);
-            const itemsGrouped = this.groupItems(shuffledItems, 4);
+            const itemsGrouped = this.groupItems(shuffledItems, 20); // increase to increase speed
 
             await this.processScraperBatches(itemsGrouped);
 
-            // @DavinciPG - @todo: why doesn't this function properly, gets called even though await
             console.timeEnd('Total Scraping Time');
-            await BrowserController.CloseBrowser();
         } catch (error) {
             console.error(`Error in runAllScrapers: ${error.message}`);
         }
@@ -155,13 +151,7 @@ class ScraperController {
 
                     await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry', { transaction });
                 } else if (message.success) {
-                    const insertedResult = await ScrapeDataController.InsertScrapeData(message.link, message.result, { transaction });
-                    if (!insertedResult.success && insertedResult.type === 'INVALID') {
-                        console.log(`Scraper hit invalid: ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`);
-                        await LoggingController.CreateLog(message.link, 'invalid', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
-                    } else {
-                        await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
-                    }
+                    await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
                 } else {
                     console.error(`Error running scraper for ${message.link}:`, message.error);
                     await LoggingController.CreateLog(message.link, 'error', message.error, { transaction });

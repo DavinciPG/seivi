@@ -1,8 +1,8 @@
 const BaseScraper = require('./BaseScraper');
 
 class KlickScraper extends BaseScraper {
-    async scrape(Entry, Options) {
-        return await this.performScrape(Entry, $ => {
+    async scrape(Entry, browserController, Options) {
+        return await this.performScrape(Entry, browserController, Options, $ => {
             const priceText = $('div.formatted-price.relative').text().trim();
             const cleanedPrice = priceText.split('\n')[0].trim();
             const formattedPrice = `${cleanedPrice}€`;
