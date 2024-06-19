@@ -11,6 +11,7 @@ const corsHandler = require('./middleware/cors');
 const rateLimiter = require('./middleware/rateLimiter');
 const sessionHandler = require('./middleware/session');
 const morgan = require('morgan');
+const path = require('path');
 
 // Import routes
 const UserRouter = require('./routes/UserRouter');
@@ -26,15 +27,20 @@ app.use(corsHandler);
 app.use(express.json());
 app.use(sessionHandler);
 app.use(morgan('combined'));
+app.use(express.static(path.join(__dirname, 'public')))
 
 // run the scraper alongside the server
-ScraperController.runAllScrapers();
-setInterval(ScraperController.runAllScrapers, 1000 * 60 * 30);
+//ScraperController.runAllScrapers();
+//setInterval(ScraperController.runAllScrapers, 1000 * 60 * 30);
 
 // Handle Routes
 app.use('/api', UserRouter);
 app.use('/api', ScrapeRouter);
 app.use('/api', NotificationRouter);
+
+app.get('/', (req, res) => {
+  res.send('index.html');
+});
 
 // Start server
 app.listen(port, () => {

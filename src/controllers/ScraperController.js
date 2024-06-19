@@ -86,7 +86,7 @@ class ScraperController {
             console.log(`Total entries to process: ${totalEntries}`);
 
             const shuffledItems = this.shuffleArray(Items);
-            const itemsGrouped = this.groupItems(shuffledItems, 20); // increase to increase speed
+            const itemsGrouped = this.groupItems(shuffledItems, 20);
 
             await this.processScraperBatches(itemsGrouped);
 
