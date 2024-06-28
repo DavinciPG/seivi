@@ -15,8 +15,8 @@ class ScrapeRouter extends BaseRouter {
         this.registerRoute('get', '/scraping/link/data', checkAuthenticated, ScrapeDataController.GetScrapeDataForLink); // this takes a query parameter
 
         this.registerRoute('get', '/scraping/user/items', checkAuthenticated, ItemController.GetAllItemsForUser);
-        this.registerRoute('put', '/scraping/item', checkAuthenticated, ItemController.UpdateItem); // takes body { link, selected_parameters }
-        this.registerRoute('post', '/scraping/item', checkAuthenticated, ItemController.CreateItem); // takes body { link, selected_parameters }
+        this.registerRoute('put', '/scraping/item', checkAuthenticated, ItemController.UpdateItem); // takes body { link }
+        this.registerRoute('post', '/scraping/item', checkAuthenticated, ItemController.CreateItem); // takes body { link }
         this.registerRoute('delete', '/scraping/item', checkAuthenticated, ItemController.DeleteItem); // takes body { link }
     }
 }

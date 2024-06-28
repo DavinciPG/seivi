@@ -14,7 +14,7 @@ class ItemController extends BaseController {
     async GetAllItemsForUser(req, res) {
         this.handleRequest(req, res, async () => {
             const UserSettings = await models.UserScraperSetting.findAll({
-                attributes: ['user_id', 'item_id', 'selected_parameters'],
+                attributes: ['user_id', 'item_id'],
                 where: {
                     user_id: req.session.user.id
                 },
@@ -82,10 +82,10 @@ class ItemController extends BaseController {
     }
     async CreateItem(req, res) {
         this.handleRequest(req, res, async () => {
-            const { link, selected_parameters } = req.body;
+            const { link } = req.body;
 
-            if(!link || !selected_parameters) {
-                return res.status(400).json({ success: false, error: 'Link and selected_parameters are required' });
+            if(!link) {
+                return res.status(400).json({ success: false, error: 'Link is required' });
             }
 
             const scraperList = await ScraperController.GetScrapers();
@@ -109,19 +109,11 @@ class ItemController extends BaseController {
             const ScraperModel = await models.Scraper.findOne({
                 where: {
                     name: scraperType
-                },
-                attributes: ['supported_parameters']
+                }
             });
 
             if (!ScraperModel) {
                 return res.status(400).json({ success: false, error: 'Scraper not found in database' });
-            }
-
-            const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
-            for (const param of Object.keys(selected_parameters)) {
-                if (!SupportedParameters[param]) {
-                    return res.status(400).json({ success: false, error: `Parameter '${param}' is not supported by the selected scraper` });
-                }
             }
 
             let Item = await models.Item.findOne({
@@ -150,19 +142,20 @@ class ItemController extends BaseController {
 
             await models.UserScraperSetting.create({
                 user_id: req.session.user.id,
-                item_id: Item.id,
-                selected_parameters
+                item_id: Item.id
             });
 
             res.json({ success: true });
         });
     }
+
+    // at the moment unused, unsure what to update for item
     async UpdateItem(req, res) {
         this.handleRequest(req, res, async () => {
-            const { link, selected_parameters } = req.body;
+            const { link } = req.body;
 
-            if(!link || !selected_parameters) {
-                return res.status(400).json({ success: false, error: 'Link and selected_parameters are required' });
+            if(!link) {
+                return res.status(400).json({ success: false, error: 'Link is required' });
             }
 
             const ItemModel = await models.Item.findOne({
@@ -178,19 +171,11 @@ class ItemController extends BaseController {
             const ScraperModel = await models.Scraper.findOne({
                 where: {
                     name: scraperType
-                },
-                attributes: ['supported_parameters']
+                }
             });
 
             if (!ScraperModel) {
                 return res.status(400).json({ success: false, error: 'Scraper not found in database' });
-            }
-
-            const SupportedParameters = JSON.parse(ScraperModel.supported_parameters);
-            for (const param of Object.keys(selected_parameters)) {
-                if (!SupportedParameters[param]) {
-                    return res.status(400).json({ success: false, error: `Parameter '${param}' is not supported by the selected scraper` });
-                }
             }
 
             const UserSetting = await models.UserScraperSetting.findOne({
@@ -205,7 +190,7 @@ class ItemController extends BaseController {
             }
 
             await UserSetting.update({
-                selected_parameters
+
             });
 
             res.json({ success: true });

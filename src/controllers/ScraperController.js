@@ -49,90 +49,78 @@ class ScraperController {
             const result = await scraper.scraper.scrape(Entry, browserController, Options);
             return result;
         } catch (error) {
+            console.error(`Error in RunScraper: ${error.message}`);
             return { error: error.message };
         }
     }
 
     shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
+        return array.sort(() => Math.random() - 0.5);
     }
 
     groupItems(items, numGroups) {
-        const groupedItems = Array.from({ length: numGroups }, () => []);
-        items.forEach((item, index) => {
-            groupedItems[index % numGroups].push(item);
-        });
-        return groupedItems;
+        return items.reduce((groups, item, i) => {
+            groups[i % numGroups].push(item);
+            return groups;
+        }, Array.from({ length: numGroups }, () => []));
     }
 
     async runAllScrapers() {
-        try {
-            const Items = await models.Item.findAll({
-                where: {
-                    invalid: false
-                },
-                attributes: ['link', 'scraper_id', 'invalid'],
-                include: [{
-                    model: models.Scraper,
-                    attributes: ['name'],
-                }]
-            });
+        const entries = await models.Item.findAll({
+            where: {
+                invalid: false
+            },
+            attributes: ['link', 'scraper_id', 'invalid'],
+            include: [{
+                model: models.Scraper,
+                attributes: ['name'],
+            }]
+        });
 
-            const totalEntries = Items.length;
-            console.log(`Total entries to process: ${totalEntries}`);
-
-            const shuffledItems = this.shuffleArray(Items);
-            const itemsGrouped = this.groupItems(shuffledItems, 20);
-
-            await this.processScraperBatches(itemsGrouped);
-
-            console.timeEnd('Total Scraping Time');
-        } catch (error) {
-            console.error(`Error in runAllScrapers: ${error.message}`);
-        }
-    }
-
-    async processScraperBatches(itemsGrouped) {
+        const totalEntries = entries.length;
+        console.log(`Total entries to process: ${totalEntries}`);
         console.time('Total Scraping Time');
 
-        const workerPromises = [];
+        const shuffledEntries = this.shuffleArray(entries);
+        const chunkSize = Math.ceil(shuffledEntries.length / Object.keys(ActiveScrapers).length);
+        const entryChunks = [];
 
-        itemsGrouped.forEach((chunk) => {
-            const workerPromise = new Promise((resolve, reject) => {
-                const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
-                    workerData: {
-                        entries: JSON.parse(JSON.stringify(chunk)),
-                        options: { debug: true }
-                    }
-                });
+        for (let i = 0; i < shuffledEntries.length; i += chunkSize) {
+            entryChunks.push(shuffledEntries.slice(i, i + chunkSize));
+        }
 
-                worker.on('message', async (messages) => {
-                    await this.handleWorkerMessages(messages);
-                });
+        const workerPromises = entryChunks.map((chunk, index) => {
+            const scraperNames = Object.keys(ActiveScrapers);
+            const scraperName = scraperNames[index % scraperNames.length];
 
-                worker.on('error', (error) => {
-                    console.error(`Worker error: `, error);
-                    reject(error);
-                });
-
-                worker.on('exit', (code) => {
-                    if (code !== 0) {
-                        console.error(`Worker stopped with exit code ${code}`);
-                        reject(new Error(`Worker stopped with exit code ${code}`));
-                    } else {
-                        resolve();
-                    }
-                });
-            });
-
-            workerPromises.push(workerPromise);
+            return this.runWorker(scraperName, chunk);
         });
 
         await Promise.all(workerPromises);
+
+        console.timeEnd('Total Scraping Time');
+    }
+
+    runWorker(entriesForScraper) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker(path.resolve(__dirname, '../scrapers/ScraperWorker.js'), {
+                workerData: { entries: entriesForScraper }
+            });
+
+            worker.on('message', async (message) => {
+                await this.handleWorkerMessages(message);
+            });
+
+            worker.on('error', reject);
+
+            worker.on('exit', (code) => {
+                if (code !== 0) {
+                    reject(new Error(`Worker stopped with exit code ${code}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
     }
 
     async handleWorkerMessages(messages) {
@@ -140,28 +128,33 @@ class ScraperController {
             const transaction = await models.sequelize.transaction();
             try {
                 if (message.invalid) {
-                    console.log(`Scraper ${message.entry.Scraper.name} invalid entry for ${message.link}`);
-
-                    await models.Item.update({invalid: true}, {
-                        where: {
-                            link: message.link
-                        },
-                        transaction
-                    });
-
-                    await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry', { transaction });
+                    await this.logInvalidEntry(message, transaction);
                 } else if (message.success) {
-                    await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
+                    await this.logSuccessEntry(message, transaction);
                 } else {
-                    console.error(`Error running scraper for ${message.link}:`, message.error);
-                    await LoggingController.CreateLog(message.link, 'error', message.error, { transaction });
+                    await this.logErrorEntry(message, transaction);
                 }
-
                 await transaction.commit();
-            } catch(error) {
+            } catch (error) {
                 await transaction.rollback();
+                console.error(`Transaction error: ${error.message}`);
             }
         }
+    }
+
+    async logInvalidEntry(message, transaction) {
+        console.log(`Scraper ${message.entry.Scraper.name} invalid entry for ${message.link}`);
+        await models.Item.update({ invalid: true }, { where: { link: message.link }, transaction });
+        await LoggingController.CreateLog(message.link, 'invalid', 'Invalid entry', { transaction });
+    }
+
+    async logSuccessEntry(message, transaction) {
+        await LoggingController.CreateLog(message.link, 'success', `Scraper completed ${message.entry.Scraper.name} for entry: ${JSON.stringify(message.entry)}`, { transaction });
+    }
+
+    async logErrorEntry(message, transaction) {
+        console.error(`Error running scraper for ${message.link}: ${message.error}`);
+        await LoggingController.CreateLog(message.link, 'error', message.error, { transaction });
     }
 }
 

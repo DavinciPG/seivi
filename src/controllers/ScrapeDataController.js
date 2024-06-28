@@ -53,7 +53,7 @@ class ScrapeDataController extends BaseController {
 
                 if (Object.keys(differences).length > 0) {
                     const UserSettings = await models.UserScraperSetting.findAll({
-                        attributes: ['user_id', 'item_id', 'selected_parameters'],
+                        attributes: ['user_id', 'item_id'],
                         include: [{
                             model: models.Item,
                             attributes: ['link'],
@@ -68,9 +68,6 @@ class ScrapeDataController extends BaseController {
                     }
 
                     for (const userSetting of UserSettings) {
-                        const relevantChanges = Object.keys(differences).filter(param => userSetting.dataValues.selected_parameters[param]);
-
-                        if (relevantChanges.length > 0) {
                             const userMessage = `Data for ${link} has changed: ${JSON.stringify(differences)}`;
                             await models.Notification.create({
                                 time: new Date(),
@@ -82,7 +79,6 @@ class ScrapeDataController extends BaseController {
                                 user_id: userSetting.dataValues.user_id
                             }, { transaction });
                         }
-                    }
                 }
             }
 
@@ -105,7 +101,7 @@ class ScrapeDataController extends BaseController {
     async GetScrapeDataForUser(req, res) {
         this.handleRequest(req, res, async () => {
             const UserSettings = await models.UserScraperSetting.findAll({
-                attributes: ['user_id', 'item_id', 'selected_parameters'],
+                attributes: ['user_id', 'item_id'],
                 where: {
                     user_id: req.session.user.id
                 },

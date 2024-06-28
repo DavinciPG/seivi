@@ -25,9 +25,6 @@ module.exports = (sequelize) => {
       },
       onDelete: 'CASCADE'
     },
-    selected_parameters: {
-      type: DataTypes.JSON
-    },
     created_at: {
       type: DataTypes.DATE
     },

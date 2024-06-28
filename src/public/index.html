@@ -81,11 +81,7 @@
         <label for="input-scraping-item-link-put">Link:</label>
         <input type="text" id="input-scraping-item-link" name="input-scraping-item-link">
     </div>
-	<div class="input-field">
-        <label for="input-scraping-item-selected-parameters-put">Selected Parameters:</label>
-        <textarea id="input-scraping-item-selected-parameters" name="input-scraping-item-selected-parameters" rows="4" cols="50"></textarea>
-    </div>
-    <button onclick="callPutEndpoint('/scraping/item', { link: document.getElementById('input-scraping-item-link-put').value, selected_parameters: document.getElementById('input-scraping-item-selected-parameters-put').value }))">Test PUT /scraping/item</button>
+    <button onclick="callPutEndpoint('/scraping/item', { link: document.getElementById('input-scraping-item-link-put').value }))">Test PUT /scraping/item</button>
     <pre id="/scraping/item-put" class="response"></pre>
 </div>
 
@@ -95,11 +91,7 @@
         <label for="input-scraping-item-link">Link:</label>
         <input type="text" id="input-scraping-item-link" name="input-scraping-item-link">
     </div>
-    <div class="input-field">
-        <label for="input-scraping-item-selected-parameters">Selected Parameters:</label>
-        <textarea id="input-scraping-item-selected-parameters" name="input-scraping-item-selected-parameters" rows="4" cols="50"></textarea>
-    </div>
-    <button onclick="callPostEndpoint('/scraping/item', { link: document.getElementById('input-scraping-item-link').value, selected_parameters: document.getElementById('input-scraping-item-selected-parameters').value })">Test POST /scraping/item</button>
+    <button onclick="callPostEndpoint('/scraping/item', { link: document.getElementById('input-scraping-item-link').value })">Test POST /scraping/item</button>
     <pre id="/scraping/item-post" class="response"></pre>
 </div>
 
@@ -109,7 +101,7 @@
         <label for="input-scraping-item-delete">Link:</label>
         <input type="text" id="input-scraping-item-delete" name="input-scraping-item-delete">
     </div>
-    <button onclick="callDeleteEndpoint('/scraping/item', { id: document.getElementById('input-scraping-item-delete').value })">Test DELETE /scraping/item</button>
+    <button onclick="callDeleteEndpoint('/scraping/item', { link: document.getElementById('input-scraping-item-delete').value })">Test DELETE /scraping/item</button>
     <pre id="/scraping/item-delete" class="response"></pre>
 </div>
 

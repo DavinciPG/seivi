@@ -30,8 +30,10 @@ app.use(morgan('combined'));
 app.use(express.static(path.join(__dirname, 'public')))
 
 // run the scraper alongside the server
-//ScraperController.runAllScrapers();
-//setInterval(ScraperController.runAllScrapers, 1000 * 60 * 30);
+/*ScraperController.runAllScrapers();
+setInterval(() => {
+  ScraperController.runAllScrapers();
+}, 1000 * 60 * 30);*/
 
 // Handle Routes
 app.use('/api', UserRouter);
