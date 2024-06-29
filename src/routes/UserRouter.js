@@ -14,8 +14,8 @@ class UserRouter extends BaseRouter {
         this.registerRoute('post', '/sessions', checkNotAuthenticated, UserController.createSession);
         this.registerRoute('delete', '/sessions', checkAuthenticated, UserController.deleteSession);
         this.registerRoute('get', '/sessions', checkAuthenticated, UserController.getSession);
-        this.registerRoute('post', '/forgot-password', checkAuthenticated, UserController.forgotPassword);
-        this.registerRoute('post', '/reset/:token', checkAuthenticated, UserController.resetPassword);
+        this.registerRoute('post', '/forgot-password', UserController.forgotPassword);
+        this.registerRoute('post', '/reset/:token', UserController.resetPassword);
     }
 }
 
